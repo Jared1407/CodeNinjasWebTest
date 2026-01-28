@@ -1,0 +1,12 @@
+{
+  "senseis": [
+    {
+      "id": "sensei_default",
+      "email": "admin",
+      "name": "Head Sensei",
+      "passwordHash": "$2b$10$ByAkf1ml6r0AnqoIhHhZjebvZYrAlP34P5bI3pyG7T1736rCRAEYu",
+      "role": "admin",
+      "createdAt": 1769552872896
+    }
+  ]
+}
