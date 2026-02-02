@@ -995,6 +995,8 @@ function approveRequest(id) {
     // Use custom modal with 'success' (Green) theme
     showConfirm(`Mark request for ${req.item} by ${req.name} as PAID?`, () => {
 
+        // Points already deducted at submission time
+
         const queueItem = {
             name: req.name,
             item: req.item,
@@ -1016,11 +1018,38 @@ function approveRequest(id) {
 }
 
 function deleteRequest(id) {
-    if (confirm("Delete this request?")) {
+    const req = requestsData.find(r => r.id === id);
+    if (!req) return;
+
+    showConfirm(`Deny request for ${req.item} by ${req.name}? Points will be refunded.`, () => {
+        // Refund points to ninja
+        const cost = parseInt(req.cost) || 0;
+        if (cost > 0) {
+            // Find ninja by stored ID, name, or userId
+            let ninja = null;
+            if (req.ninjaId) {
+                ninja = leaderboardData.find(n => n.id === req.ninjaId);
+            }
+            if (!ninja) {
+                ninja = leaderboardData.find(n =>
+                    n.name.toLowerCase() === req.name.toLowerCase() ||
+                    (n.username && n.username.toLowerCase() === (req.userId || '').toLowerCase())
+                );
+            }
+
+            if (ninja) {
+                const newPoints = (ninja.points || 0) + cost;
+                DB.leaderboard.update(ninja.id, { points: newPoints });
+                leaderboardData = DB.leaderboard.getAll();
+                console.log(`Refunded ${cost} points to ${ninja.name}. New balance: ${newPoints}`);
+            }
+        }
+
         DB.requests.delete(id);
         requestsData = DB.requests.getAll();
         renderAdminRequests();
-    }
+        renderAdminLbPreview();
+    });
 }
 
 function updateQueueStatus(id, status) {

@@ -2,9 +2,9 @@
   "news": [
     {
       "id": "n1",
-      "title": "Minecraft Night",
-      "date": "Nov 22",
-      "badge": "SOON",
+      "title": "Game Night",
+      "date": "February 13th",
+      "badge": "Every Other Friday",
       "createdAt": 1769549727464
     }
   ],
@@ -19,53 +19,141 @@
   ],
   "coins": [
     {
-      "id": "c1",
-      "task": "Wear Uniform",
-      "val": "+1",
-      "type": "silver",
-      "createdAt": 1769549727472
+      "id": "coins_1770052170683_rtwk32kn4",
+      "task": "Belt Up",
+      "val": "+50",
+      "createdAt": 1770052170683
+    },
+    {
+      "id": "coins_1770052157306_mjcfnnqsq",
+      "task": "Complete a Level",
+      "val": "+10",
+      "createdAt": 1770052157306
+    },
+    {
+      "id": "coins_1770052193644_dw0ehi9xt",
+      "task": "Help a ninja in need",
+      "val": "+2",
+      "createdAt": 1770052193644
     }
   ],
   "catalog": [
     {
-      "id": "cat1",
-      "name": "Star",
-      "cost": "50",
-      "tier": "tier1",
-      "category": "standard",
-      "icon": "fa-star",
-      "visible": true,
-      "createdAt": 1769549727476,
-      "interest": 0
-    },
-    {
-      "id": "catalog_1769554200191_kmzh0xzc1",
+      "id": "catalog_1770052272053_w0yek7vb7",
       "name": "3D Print Request",
       "cost": "15",
-      "tier": "tier2",
+      "tier": "tier1",
       "icon": "fa-cube",
       "category": "custom",
-      "desc": "A Custom Print",
-      "image": "https://www.tinkercad.com/",
+      "desc": "Request a 3D print",
+      "image": "https://pic2-cdn.creality.com/crealityCloud/common/bc8ccf3512a86925c8fabed684b97ab1.webp",
       "visible": true,
       "variations": [],
-      "colorFee": "5",
+      "colorFee": "",
       "colorSelection": false,
       "interest": 0,
-      "createdAt": 1769554200191
+      "createdAt": 1770052272053
+    },
+    {
+      "id": "catalog_1770065836976_bughsfem6",
+      "name": "Super Cool Prize",
+      "cost": "1",
+      "tier": "tier1",
+      "icon": "fa-cube",
+      "category": "standard",
+      "desc": "short description",
+      "image": "",
+      "visible": true,
+      "variations": [],
+      "colorFee": 0,
+      "colorSelection": false,
+      "interest": 2,
+      "createdAt": 1770065836976
     }
   ],
-  "requests": [],
+  "requests": [
+    {
+      "id": "requests_1770064188483_52fn39ajc",
+      "userId": "Head Sensei",
+      "name": "Head Sensei",
+      "createdAt": 1770064188479,
+      "status": "Waiting for Payment",
+      "item": "Gun",
+      "details": "URL: https://www.tinkercad.com/ | Color: Matte Grass Green",
+      "cost": "Custom Fee"
+    },
+    {
+      "id": "requests_1770066065679_1xu6bbkut",
+      "userId": "jared.g",
+      "name": "Jared G.",
+      "createdAt": 1770066065667,
+      "status": "Waiting for Payment",
+      "item": "Gun",
+      "details": "URL: https://www.tinkercad.com/",
+      "cost": "15",
+      "ninjaId": "leaderboard_1769549911193_0mhwntmsx"
+    }
+  ],
   "queue": [
     {
       "id": "queue_1769554274787_hf1dzc5f9",
       "name": "Taylor N.",
       "item": "Gun",
       "details": "URL: https://www.tinkercad.com/",
-      "status": "Pending",
+      "status": "Picked Up",
       "createdAt": 1769554274784,
       "paidAt": 1769554274784,
       "originRequestId": "requests_1769554250219_y42kns0il"
+    },
+    {
+      "id": "queue_1770064266845_u7kn34r8f",
+      "name": "Jared G.",
+      "item": "Gun",
+      "details": "URL: https://www.tinkercad.com/ | Color: Matte Grass Green",
+      "status": "Printing",
+      "createdAt": 1770064266842,
+      "paidAt": 1770064266842,
+      "originRequestId": "requests_1770064222947_75ysk784h"
+    },
+    {
+      "id": "queue_1770065653361_ubc8anch4",
+      "name": "Jared G.",
+      "item": "test",
+      "details": "URL: https://www.tinkercad.com/",
+      "status": "Pending",
+      "createdAt": 1770065653358,
+      "paidAt": 1770065653358,
+      "originRequestId": "requests_1770065621614_swloj5f0f"
+    },
+    {
+      "id": "queue_1770065676751_zrbhw0zk1",
+      "name": "Jared G.",
+      "item": "Gun",
+      "details": "URL: https://www.tinkercad.com/",
+      "status": "Pending",
+      "createdAt": 1770065676748,
+      "paidAt": 1770065676748,
+      "originRequestId": "requests_1770065612303_d9sdxxkxe"
+    },
+    {
+      "id": "queue_1770065748232_55mi9mzcn",
+      "name": "Jared G.",
+      "item": "Gun",
+      "details": "URL: https://www.tinkercad.com/",
+      "status": "Pending",
+      "createdAt": 1770065748217,
+      "paidAt": 1770065748217,
+      "originRequestId": "requests_1770065699709_3f3jkpfxr"
+    },
+    {
+      "id": "queue_1770065885983_i35j73t31",
+      "name": "Head Sensei",
+      "item": "test",
+      "details": "URL: https://www.tinkercad.com/ | Color: Matte Dark Red",
+      "status": "Pending",
+      "createdAt": 1770065885981,
+      "paidAt": 1770065885981,
+      "originRequestId": "requests_1770064151657_hlznnkeyv"
     }
   ],
   "leaderboard": [
@@ -81,15 +169,15 @@
       "id": "leaderboard_1769549905923_jz5fcfams",
       "name": "Taylor N.",
       "username": "taylorn",
-      "points": 0,
-      "belt": "Yellow",
+      "points": 3075,
+      "belt": "Brown",
       "createdAt": 1769549905923
     },
     {
       "id": "leaderboard_1769549911193_0mhwntmsx",
       "name": "Jared G.",
       "username": "jared.g",
-      "points": 25025000,
+      "points": 25024955,
       "belt": "Black",
       "createdAt": 1769549911193
     },
@@ -214,8 +302,58 @@
       "createdAt": 1769553328253
     }
   ],
-  "jams": [],
-  "jamSubmissions": [],
+  "jams": [
+    {
+      "id": "jams_1770047633960_m7v6z03cc",
+      "title": "February Game Jam",
+      "dates": "Feb 1 - Feb 28",
+      "type": "Game Jam",
+      "image": "https://www.codeninjas.com/hubfs/logo-desktop-final_1@2.5x.webp",
+      "header": "Theme: **Friendship**",
+      "desc": "This game jam is centered around the power of friendship, which as they say can overcome any obstacles.",
+      "details": "All games must be ones original creative work, created through impact sandbox. No random makecode arcade links will be accepted!",
+      "color": "#f10ee9",
+      "status": "active",
+      "createdAt": 1770047633960,
+      "winners": [
+        {
+          "id": "sub_1770048116272",
+          "jamId": "jams_1770047633960_m7v6z03cc",
+          "ninjaName": "Jared G.",
+          "ninjaId": "leaderboard_1769549911193_0mhwntmsx",
+          "gameTitle": "Testing",
+          "link": "https://makecode.com/_HqbfV143DgH8",
+          "submittedAt": 1770048116272,
+          "createdAt": 1770048116283
+        }
+      ]
+    },
+    {
+      "id": "jams_1770061402766_wtzl2dza1",
+      "title": "January Game Jam",
+      "dates": "Jan 1 - Jan 31",
+      "type": "Game Jam",
+      "image": "https://www.codeninjas.com/hubfs/logo-desktop-final_1@2.5x.webp",
+      "header": "Theme: **New Beginnings**",
+      "desc": "The new year is upon us and we are celebrating new beginnings!",
+      "details": "All games must be ones original creative work, created through impact sandbox. No random makecode arcade links will be accepted!",
+      "color": "#f1c40f",
+      "status": "active",
+      "createdAt": 1770061402766
+    }
+  ],
+  "jamSubmissions": [
+    {
+      "id": "sub_1770048116272",
+      "jamId": "jams_1770047633960_m7v6z03cc",
+      "ninjaName": "Jared G.",
+      "ninjaId": "leaderboard_1769549911193_0mhwntmsx",
+      "gameTitle": "Testing",
+      "link": "https://makecode.com/_HqbfV143DgH8",
+      "submittedAt": 1770048116272,
+      "createdAt": 1770048116283
+    }
+  ],
   "games": [
     {
       "id": "games_1769630159457_rc3k5orol",

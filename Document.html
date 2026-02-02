@@ -100,9 +100,15 @@
                     </h1>
                     <p>Welcome to the Dojo. Build something amazing today.</p>
                 </div>
-                <button onclick="logout()"
-                    style="background:none; border:1px solid #444; color:#888; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">LOG
-                    OUT</button>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <!-- <button id="admin-sensei-btn" onclick="openSenseiModal()"
+                        style="display:none; background:var(--cn-caribbean-green); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                        <i class="fa-solid fa-user-plus"></i> ADD SENSEI
+                    </button> -->
+                    <button onclick="logout()"
+                        style="background:none; border:1px solid #444; color:#888; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">LOG
+                        OUT</button>
+                </div>
             </header>
             <div class="content-area">
                 <div id="home" class="tab-content active">
@@ -278,6 +284,13 @@
                                 placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()">
                             <button class="btn-add" onclick="adminAddNinja()">ADD</button>
                         </div>
+                    </div>
+                    <div class="admin-card" style="background: linear-gradient(135deg, #002340 0%, #04B88F 100%);">
+                        <h3 style="color:white;"><i class="fa-solid fa-user-ninja"></i> Sensei Management</h3>
+                        <button class="btn-add" onclick="openSenseiModal()"
+                            style="background:white; color:#002340; width:100%;">
+                            <i class="fa-solid fa-user-plus"></i> ADD NEW SENSEI
+                        </button>
                     </div>
                 </div>
                 <div id="admin-lb" class="admin-section">
@@ -690,6 +703,31 @@
                 <label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label>
                 <input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left">
                 <button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button>
+            </div>
+        </div>
+    </div>
+    <!-- Add Sensei Modal (Admin Only) -->
+    <div id="sensei-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header" style="background:var(--cn-caribbean-green);">
+                <h2 style="color:white; margin:0;"><i class="fa-solid fa-user-plus"></i> Add New Sensei</h2>
+                <button onclick="document.getElementById('sensei-modal').style.display='none'"
+                    style="background:none; border:none; color:white;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label style="color:#aaa; font-size:0.8rem;">Email/Username:</label>
+                <input type="text" id="new-sensei-email" class="admin-input" placeholder="sensei@example.com">
+                <label style="color:#aaa; font-size:0.8rem;">Display Name:</label>
+                <input type="text" id="new-sensei-name" class="admin-input" placeholder="Sensei John">
+                <label style="color:#aaa; font-size:0.8rem;">Password:</label>
+                <input type="password" id="new-sensei-password" class="admin-input" placeholder="New password">
+                <label style="color:#aaa; font-size:0.8rem;">Your Admin Password:</label>
+                <input type="password" id="admin-password-confirm" class="admin-input"
+                    placeholder="Your admin password">
+                <button onclick="registerNewSensei()" class="btn-blue"
+                    style="margin-top:10px; background:var(--cn-caribbean-green);">REGISTER SENSEI</button>
             </div>
         </div>
     </div>

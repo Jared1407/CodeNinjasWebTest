@@ -2,7 +2,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = 3000;
@@ -143,8 +143,8 @@ app.post('/api/auth/login', async (req, res) => {
                     id: sensei.id,
                     email: sensei.email,
                     name: sensei.name,
-                    role: sensei.role,
-                    isAdmin: true
+                    role: sensei.role || 'sensei',
+                    isAdmin: sensei.role === 'admin'
                 }
             });
         } else {

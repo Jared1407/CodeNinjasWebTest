@@ -399,3 +399,47 @@ function openJamSubmission(jamId, isWinnerView) {
     document.getElementById('js-link').value = '';
     document.getElementById('jam-submit-modal').style.display = 'flex';
 }
+
+// Submit a jam entry
+function submitJamEntry() {
+    const gameTitle = document.getElementById('js-game-title').value.trim();
+    const link = document.getElementById('js-link').value.trim();
+
+    if (!gameTitle || !link) {
+        showAlert("Missing Info", "Please fill in both the game title and link.");
+        return;
+    }
+
+    if (!currentUser) {
+        showAlert("Not Logged In", "Please log in to submit.");
+        return;
+    }
+
+    if (!currentJamSubmissionId) {
+        showAlert("Error", "No jam selected. Please try again.");
+        return;
+    }
+
+    // Create submission object
+    const submission = {
+        id: 'sub_' + Date.now(),
+        jamId: currentJamSubmissionId,
+        ninjaName: currentUser.name,
+        ninjaId: currentUser.id,
+        gameTitle: gameTitle,
+        link: link,
+        submittedAt: Date.now()
+    };
+
+    // Save to database
+    DB.jamSubmissions.add(submission);
+    jamSubmissions.push(submission);
+
+    // Close modal and show success
+    document.getElementById('jam-submit-modal').style.display = 'none';
+    showAlert("Submitted!", "Your game has been submitted to the jam. Good luck!");
+
+    // Clear form
+    document.getElementById('js-game-title').value = '';
+    document.getElementById('js-link').value = '';
+}

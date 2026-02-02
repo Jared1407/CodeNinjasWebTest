@@ -377,7 +377,7 @@ function submitRequest() {
         requestData.item = modelName;
         requestData.details = `URL: ${url}`;
         if (selectedColor) requestData.details += ` | Color: ${selectedColor}`;
-        requestData.cost = "Custom Fee";
+        requestData.cost = currentRequestItem.cost; // Use catalog item's cost for point deduction
     }
     // PREMIUM / STANDARD
     else {
@@ -396,6 +396,36 @@ function submitRequest() {
 
         requestData.image = variantImg;
         requestData.cost = currentRequestItem.cost;
+    }
+
+    // Calculate cost and deduct points from ninja
+    const cost = parseInt(requestData.cost) || 0;
+    if (cost > 0) {
+        // Find ninja in leaderboard
+        const ninja = leaderboardData.find(n =>
+            n.name.toLowerCase() === currentUser.name.toLowerCase() ||
+            (n.username && n.username.toLowerCase() === (currentUser.username || '').toLowerCase())
+        );
+
+        if (ninja) {
+            if ((ninja.points || 0) < cost) {
+                showAlert("Insufficient Points", `You need ${cost} Gold Coins for this item. You have ${ninja.points || 0}.`);
+                return;
+            }
+            const newPoints = (ninja.points || 0) - cost;
+            DB.leaderboard.update(ninja.id, { points: newPoints });
+            leaderboardData = DB.leaderboard.getAll();
+            console.log(`Deducted ${cost} points from ${ninja.name}. New balance: ${newPoints}`);
+        }
+    }
+
+    // Store ninjaId for potential refund
+    const ninja = leaderboardData.find(n =>
+        n.name.toLowerCase() === currentUser.name.toLowerCase() ||
+        (n.username && n.username.toLowerCase() === (currentUser.username || '').toLowerCase())
+    );
+    if (ninja) {
+        requestData.ninjaId = ninja.id;
     }
 
     // Add to LocalDB

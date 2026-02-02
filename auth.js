@@ -50,7 +50,8 @@ function logout() {
 }
 
 function loginAsAdmin() {
-    currentUser = { name: "Sensei", isAdmin: true };
+    // Use the actual user data from the server (includes role-based isAdmin)
+    currentUser = LocalAuth.currentUser || { name: "Sensei", isAdmin: false };
     localStorage.setItem('cn_user', JSON.stringify(currentUser));
     enterDashboard();
     document.getElementById('admin-view').classList.add('active');
@@ -66,12 +67,49 @@ function enterDashboard() {
 
     if (currentUser && currentUser.isAdmin) {
         document.getElementById('floating-admin-toggle').style.display = 'flex';
+        // Show add sensei button for admin users
+        document.getElementById('admin-sensei-btn').style.display = 'block';
         // ADD THESE LINES:
         loadCatalog();
         loadQueue();
     } else {
         document.getElementById('floating-admin-toggle').style.display = 'none';
+        document.getElementById('admin-sensei-btn').style.display = 'none';
     }
     refreshAll();
+}
+
+// Open the Add Sensei modal (admin only)
+function openSenseiModal() {
+    document.getElementById('new-sensei-email').value = '';
+    document.getElementById('new-sensei-name').value = '';
+    document.getElementById('new-sensei-password').value = '';
+    document.getElementById('admin-password-confirm').value = '';
+    document.getElementById('sensei-modal').style.display = 'flex';
+}
+
+// Register a new Sensei (requires admin password)
+async function registerNewSensei() {
+    const email = document.getElementById('new-sensei-email').value.trim();
+    const name = document.getElementById('new-sensei-name').value.trim();
+    const password = document.getElementById('new-sensei-password').value;
+    const adminPassword = document.getElementById('admin-password-confirm').value;
+
+    if (!email || !name || !password || !adminPassword) {
+        showAlert('Missing Info', 'Please fill in all fields.');
+        return;
+    }
+
+    try {
+        const result = await LocalAuth.registerSensei(email, password, name, adminPassword);
+        if (result.success) {
+            document.getElementById('sensei-modal').style.display = 'none';
+            showAlert('Success!', `Sensei "${name}" has been registered. They can now log in with email "${email}".`);
+        } else {
+            showAlert('Error', result.error || 'Failed to register sensei.');
+        }
+    } catch (err) {
+        showAlert('Error', err.message || 'Failed to register sensei. Check admin password.');
+    }
 }
 
