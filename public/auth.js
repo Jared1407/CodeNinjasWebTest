@@ -1,5 +1,5 @@
-// auth.js - PUBLIC FOLDER VERSION
-console.log('📁 LOADING: PUBLIC/auth.js');
+// auth.js
+
 
 function toggleAdminLogin() {
     const n = document.getElementById('ninja-login-form');
@@ -60,7 +60,6 @@ function loginAsAdmin() {
     loadCatalog(); loadQueue(); loadLeaderboard(); loadJams(); loadGames();
 }
 
-// auth.js - Update this function
 function enterDashboard() {
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
