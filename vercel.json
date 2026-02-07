@@ -1,0 +1,37 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/api/auth/login",
+            "destination": "/api/auth/login"
+        },
+        {
+            "source": "/api/auth/register",
+            "destination": "/api/auth/register"
+        },
+        {
+            "source": "/api/auth/password",
+            "destination": "/api/auth/password"
+        },
+        {
+            "source": "/api/auth/senseis",
+            "destination": "/api/auth/senseis/index"
+        },
+        {
+            "source": "/api/auth/senseis/:id",
+            "destination": "/api/auth/senseis/[id]"
+        },
+        {
+            "source": "/api/:collection/deleteWhere",
+            "destination": "/api/[collection]/deleteWhere"
+        },
+        {
+            "source": "/api/:collection/:id",
+            "destination": "/api/[collection]/[id]"
+        },
+        {
+            "source": "/api/:collection",
+            "destination": "/api/[collection]/index"
+        }
+    ]
+}

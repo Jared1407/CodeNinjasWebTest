@@ -3,4 +3,5 @@ node_modules
 dist
 *.bat
 *.zip
-Themes
+.env
+.vercel

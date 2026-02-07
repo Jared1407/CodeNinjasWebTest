@@ -1,29 +1,22 @@
 {
   "name": "codeninja-dashboard",
-  "version": "0.8.1",
-  "description": "Code Ninjas Dashboard - Northridge Location",
-  "main": "server.js",
+  "version": "0.9.0",
+  "description": "Code Ninjas Dashboard - Northridge Location (Vercel Edition)",
+  "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "build": "pkg . --targets node18-win-x64 --output dist/CodeNinjasDashboard.exe"
-  },
-  "bin": "server.js",
-  "pkg": {
-    "assets": [
-      "*.html",
-      "*.css",
-      "*.js",
-      "*.json",
-      "Themes/**/*"
-    ],
-    "outputPath": "dist"
+    "dev": "vercel dev",
+    "build": "echo 'Build handled by Vercel'",
+    "start": "vercel dev",
+    "migrate": "node scripts/migrate-data.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "express": "^4.18.2"
+    "mongoose": "^8.0.0"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^5.15.0"
+    "vercel": "^33.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
