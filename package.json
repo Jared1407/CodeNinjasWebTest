@@ -4,9 +4,7 @@
   "description": "Code Ninjas Dashboard - Northridge Location (Vercel Edition)",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
     "build": "echo 'Build handled by Vercel'",
-    "start": "vercel dev",
     "migrate": "node scripts/migrate-data.js"
   },
   "dependencies": {

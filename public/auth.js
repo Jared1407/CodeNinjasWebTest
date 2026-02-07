@@ -69,9 +69,14 @@ function enterDashboard() {
         document.getElementById('floating-admin-toggle').style.display = 'flex';
         // Show add sensei button for admin users
         document.getElementById('admin-sensei-btn').style.display = 'block';
-        // ADD THESE LINES:
+        // Auto-show admin view for senseis
+        document.getElementById('admin-view').classList.add('active');
+        // Load admin data
         loadCatalog();
         loadQueue();
+        loadLeaderboard();
+        loadJams();
+        loadGames();
     } else {
         document.getElementById('floating-admin-toggle').style.display = 'none';
         document.getElementById('admin-sensei-btn').style.display = 'none';
