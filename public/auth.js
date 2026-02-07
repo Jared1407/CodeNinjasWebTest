@@ -80,6 +80,12 @@ function enterDashboard() {
             senseiBtn.style.display = (currentUser.isAdmin || currentUser.role === 'admin') ? 'block' : 'none';
         }
 
+        // Show sensei management card in roster only for admin users
+        const senseiCard = document.getElementById('sensei-management-card');
+        if (senseiCard) {
+            senseiCard.style.display = (currentUser.isAdmin || currentUser.role === 'admin') ? 'block' : 'none';
+        }
+
         // Load admin data
         loadCatalog();
         loadQueue();
