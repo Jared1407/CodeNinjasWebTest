@@ -1,4 +1,5 @@
-// auth.js
+// auth.js - ROOT FOLDER VERSION
+console.log('📁 LOADING: ROOT/auth.js');
 
 function toggleAdminLogin() {
     const n = document.getElementById('ninja-login-form');
@@ -60,21 +61,39 @@ function loginAsAdmin() {
 }
 
 // auth.js - Update this function
+// auth.js - Update this function
 function enterDashboard() {
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
     if (currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0];
 
-    if (currentUser && currentUser.isAdmin) {
-        document.getElementById('floating-admin-toggle').style.display = 'flex';
-        // Show add sensei button for admin users
-        document.getElementById('admin-sensei-btn').style.display = 'block';
-        // ADD THESE LINES:
+    // Check if user is staff (admin or sensei role)
+    const isStaff = currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei');
+
+    if (isStaff) {
+        // Show wrench toggle button for ALL staff (admin and sensei)
+        const floatingToggle = document.getElementById('floating-admin-toggle');
+        if (floatingToggle) floatingToggle.style.display = 'flex';
+
+        // Show add sensei button only for admin users
+        const senseiBtn = document.getElementById('admin-sensei-btn');
+        if (senseiBtn) {
+            senseiBtn.style.display = (currentUser.isAdmin || currentUser.role === 'admin') ? 'block' : 'none';
+        }
+
+        // Load admin data
         loadCatalog();
         loadQueue();
+        loadLeaderboard();
+        loadJams();
+        loadGames();
     } else {
-        document.getElementById('floating-admin-toggle').style.display = 'none';
-        document.getElementById('admin-sensei-btn').style.display = 'none';
+        // Hide staff-only elements for ninjas
+        const floatingToggle = document.getElementById('floating-admin-toggle');
+        if (floatingToggle) floatingToggle.style.display = 'none';
+
+        const senseiBtn = document.getElementById('admin-sensei-btn');
+        if (senseiBtn) senseiBtn.style.display = 'none';
     }
     refreshAll();
 }

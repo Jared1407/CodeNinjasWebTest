@@ -105,8 +105,23 @@ function showConfirm(msg, callback, type = 'danger') {
     };
 
     modal.style.display = 'flex';
-} function handleLogoClick() { if (window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if (clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
-function toggleAdminViewMode() { const adminView = document.getElementById('admin-view'); const floatingBtn = document.getElementById('floating-admin-toggle'); if (adminView.classList.contains('active')) { adminView.classList.remove('active'); floatingBtn.style.display = 'flex'; } else { adminView.classList.add('active'); floatingBtn.style.display = 'flex'; } }
+}
+function handleLogoClick() {
+    if (window.innerWidth < 768) return; clickCount++;
+    clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+    if (clickCount === 3) { clickCount = 0; toggleAdminLogin(); }
+}
+function toggleAdminViewMode() {
+    const adminView = document.getElementById('admin-view');
+    const floatingBtn = document.getElementById('floating-admin-toggle');
+    if (adminView.classList.contains('active')) {
+        adminView.classList.remove('active');
+        floatingBtn.style.display = 'flex';
+    } else {
+        adminView.classList.add('active');
+        floatingBtn.style.display = 'flex';
+    }
+}
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
 
 /* ================= DATA LOADING ================= */
