@@ -1,10 +1,21 @@
 // ui.js
 
+/* === SECURITY HELPERS === */
+// Escape HTML entities to prevent XSS attacks
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 /* === HELPER FUNCTIONS === */
 function formatName(name) {
     if (!name) return 'Ninja';
-    if (name.includes('.') && name.split(' ').length === 2 && name.split(' ')[1].length === 2) return name;
-    const clean = name.replace(/\./g, ' ');
+    // Sanitize input to prevent XSS
+    const safeName = escapeHtml(name);
+    if (safeName.includes('.') && safeName.split(' ').length === 2 && safeName.split(' ')[1].length === 2) return safeName;
+    const clean = safeName.replace(/\\./g, ' ');
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();

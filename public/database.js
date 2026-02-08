@@ -1,7 +1,25 @@
 // database.js - Server-backed Database Layer
-// Uses REST API with file persistence via server.js
+// Uses REST API with JWT authentication
 
 const API_BASE = '/api';
+
+// Get auth token from localStorage
+function getAuthToken() {
+    return localStorage.getItem('cn_auth_token');
+}
+
+// Get headers with optional auth
+function getAuthHeaders(includeContentType = false) {
+    const headers = {};
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
 
 /* ================= LOCAL DATABASE ================= */
 class LocalDB {
@@ -14,7 +32,12 @@ class LocalDB {
     // Load cache from server
     async loadCache() {
         try {
-            const res = await fetch(`${API_BASE}/${this.collection}`);
+            const res = await fetch(`${API_BASE}/${this.collection}`, {
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
             this.cache = await res.json();
             this.cacheLoaded = true;
         } catch (err) {
@@ -24,6 +47,7 @@ class LocalDB {
         }
         return this.cache;
     }
+
 
     // Get all documents (sync from cache, async updates cache)
     getAll() {
@@ -59,7 +83,7 @@ class LocalDB {
         // Sync to server in background
         fetch(`${API_BASE}/${this.collection}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(true),
             body: JSON.stringify(data)
         }).then(res => res.json()).then(serverItem => {
             // Update cache with server-assigned ID
@@ -82,7 +106,7 @@ class LocalDB {
             // Sync to server in background
             fetch(`${API_BASE}/${this.collection}/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(true),
                 body: JSON.stringify(data)
             }).catch(err => {
                 console.warn('Server sync failed, using localStorage fallback');
@@ -100,7 +124,8 @@ class LocalDB {
 
         // Sync to server in background
         fetch(`${API_BASE}/${this.collection}/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         }).catch(err => {
             console.warn('Server sync failed, using localStorage fallback');
             this._saveLocalFallback();
@@ -115,7 +140,7 @@ class LocalDB {
 
         fetch(`${API_BASE}/${this.collection}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(true),
             body: JSON.stringify(data)
         }).catch(err => {
             console.warn('Server sync failed, using localStorage fallback');
@@ -144,7 +169,8 @@ class LocalDB {
         // Sync each deletion to server
         toDelete.forEach(item => {
             fetch(`${API_BASE}/${this.collection}/${item.id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: getAuthHeaders()
             }).catch(() => { });
         });
 
@@ -192,6 +218,11 @@ const LocalAuth = {
                 throw new Error(data.error || 'Invalid credentials');
             }
 
+            // Store JWT token for authenticated requests
+            if (data.token) {
+                localStorage.setItem('cn_auth_token', data.token);
+            }
+
             this.currentUser = data.user;
             return { user: this.currentUser };
         } catch (err) {
@@ -219,6 +250,7 @@ const LocalAuth = {
     signOut() {
         this.currentUser = null;
         localStorage.removeItem('cn_user');
+        localStorage.removeItem('cn_auth_token');
     },
 
     // Register a new Sensei (requires admin password)
@@ -251,9 +283,11 @@ const LocalAuth = {
         return data;
     },
 
-    // Get all Senseis (without passwords)
+    // Get all Senseis (requires authentication)
     async getSenseis() {
-        const res = await fetch(`${API_BASE}/auth/senseis`);
+        const res = await fetch(`${API_BASE}/auth/senseis`, {
+            headers: getAuthHeaders()
+        });
         return res.json();
     },
 
@@ -261,7 +295,7 @@ const LocalAuth = {
     async removeSensei(senseiId, adminPassword) {
         const res = await fetch(`${API_BASE}/auth/senseis/${senseiId}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(true),
             body: JSON.stringify({ adminPassword })
         });
 

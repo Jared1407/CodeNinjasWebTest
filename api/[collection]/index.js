@@ -1,6 +1,8 @@
-// api/[collection]/index.js - Collection CRUD operations (list, create, replace all)
+// api/[collection]/index.js - Collection CRUD operations
+// GET is public, mutations require authentication
 import connectDB from '../../lib/mongodb.js';
 import { getCollectionModel } from '../../lib/models/Collection.js';
+import { verifyToken, extractToken } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
     const { collection } = req.query;
@@ -19,7 +21,7 @@ export default async function handler(req, res) {
         await connectDB();
         const Model = getCollectionModel(collection);
 
-        // GET - List all items in collection
+        // GET - List all items in collection (PUBLIC - no auth required)
         if (req.method === 'GET') {
             const items = await Model.find({});
             // Transform _id to id for frontend compatibility
@@ -28,6 +30,16 @@ export default async function handler(req, res) {
                 return obj;
             });
             return res.json(result);
+        }
+
+        // For mutations (POST, PUT, DELETE), require authentication
+        const token = extractToken(req.headers.authorization);
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const user = await verifyToken(token);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
         // POST - Add new item

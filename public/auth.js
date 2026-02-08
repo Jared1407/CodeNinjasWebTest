@@ -1,6 +1,4 @@
 // auth.js
-
-
 function toggleAdminLogin() {
     const n = document.getElementById('ninja-login-form');
     const a = document.getElementById('admin-login-form');
@@ -14,14 +12,21 @@ function toggleAdminLogin() {
     }
 }
 
-function attemptNinjaLogin() {
+async function attemptNinjaLogin() {
     const input = document.getElementById('login-username').value.trim().toLowerCase();
     if (!input) return;
+
+    // First load leaderboard data to find the ninja
+    await DB.leaderboard.loadCache();
+    leaderboardData = DB.leaderboard.getAll();
+
     // Uses LocalAuth to find ninja
     const u = LocalAuth.loginAsNinja(input);
     if (u) {
         currentUser = u;
         localStorage.setItem('cn_user', JSON.stringify(u));
+        // Load all data now that user is logged in
+        await subscribeToData();
         enterDashboard();
     } else {
         document.getElementById('login-error-msg').style.display = 'block';
@@ -36,7 +41,7 @@ async function attemptAdminLogin() {
     try {
         // Use LocalAuth for password verification
         await LocalAuth.signInWithEmailAndPassword(e, p);
-        loginAsAdmin();
+        await loginAsAdmin();
     } catch (err) {
         document.getElementById('login-error-msg').style.display = 'block';
         document.getElementById('login-error-msg').innerText = 'Access Denied. (Default password: admin)';
@@ -50,13 +55,15 @@ function logout() {
     location.reload();
 }
 
-function loginAsAdmin() {
+async function loginAsAdmin() {
     // Use the actual user data from the server (includes role-based isAdmin)
     currentUser = LocalAuth.currentUser || { name: "Sensei", isAdmin: false };
     localStorage.setItem('cn_user', JSON.stringify(currentUser));
+    // Load all data now that user is authenticated
+    await subscribeToData();
     enterDashboard();
     document.getElementById('admin-view').classList.add('active');
-    // Load all data for admin (local database)
+    // Render admin-specific views
     loadCatalog(); loadQueue(); loadLeaderboard(); loadJams(); loadGames();
 }
 

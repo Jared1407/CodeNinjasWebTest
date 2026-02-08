@@ -1,6 +1,8 @@
-// api/[collection]/[id].js - Single item CRUD operations (get, update, delete)
+// api/[collection]/[id].js - Single item CRUD operations
+// GET is public, mutations require authentication
 import connectDB from '../../lib/mongodb.js';
 import { getCollectionModel } from '../../lib/models/Collection.js';
+import { verifyToken, extractToken } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
     const { collection, id } = req.query;
@@ -19,7 +21,7 @@ export default async function handler(req, res) {
         await connectDB();
         const Model = getCollectionModel(collection);
 
-        // GET - Get single item
+        // GET - Get single item (PUBLIC - no auth required)
         if (req.method === 'GET') {
             const item = await Model.findOne({ id: id });
             if (item) {
@@ -27,6 +29,16 @@ export default async function handler(req, res) {
             } else {
                 return res.status(404).json({ error: 'Item not found' });
             }
+        }
+
+        // For mutations (PUT, DELETE), require authentication
+        const token = extractToken(req.headers.authorization);
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const user = await verifyToken(token);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
         // PUT - Update item

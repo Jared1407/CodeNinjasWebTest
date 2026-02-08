@@ -218,13 +218,18 @@ window.onload = async function () {
 
     const savedUser = localStorage.getItem('cn_user');
     if (savedUser) {
-        try { currentUser = JSON.parse(savedUser); enterDashboard(); }
+        try {
+            currentUser = JSON.parse(savedUser);
+            // Only load data after user is authenticated
+            await subscribeToData();
+            enterDashboard();
+        }
         catch (e) { console.error("Error parsing user", e); localStorage.removeItem('cn_user'); }
     } else {
         document.getElementById('login-view').style.display = 'flex';
         document.getElementById('main-app').style.display = 'none';
+        // Don't load data - user needs to login first
     }
-    await subscribeToData();
 };
 
 /* ================= REQUEST MODAL LOGIC ================= */
