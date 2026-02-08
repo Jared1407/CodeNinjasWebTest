@@ -124,20 +124,38 @@ function toggleAdminViewMode() {
 }
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
 
+/* ================= LOADING OVERLAY ================= */
+function showLoading(message = 'Loading...') {
+    const overlay = document.getElementById('loading-overlay');
+    const text = overlay?.querySelector('.loading-text');
+    if (text) text.textContent = message;
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
 /* ================= DATA LOADING ================= */
 async function subscribeToData() {
-    // Load all data from server
-    await initializeDatabase();
+    showLoading('Loading data...');
+    try {
+        // Load all data from server
+        await initializeDatabase();
 
-    // Load into local variables
-    loadAllData();
+        // Load into local variables
+        loadAllData();
 
-    // Initialize with defaults if empty
-    initializeDefaultData();
+        // Initialize with defaults if empty
+        initializeDefaultData();
 
-    // Re-load after defaults added
-    loadAllData();
-    refreshAll();
+        // Re-load after defaults added
+        loadAllData();
+        refreshAll();
+    } finally {
+        hideLoading();
+    }
 }
 
 function loadAllData() {
