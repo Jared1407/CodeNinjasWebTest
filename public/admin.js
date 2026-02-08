@@ -873,54 +873,173 @@ function saveActiveGame() {
 function renderAdminGameScores(game) {
     const list = document.getElementById('admin-game-scores-list');
     list.innerHTML = '';
-    if (!game.scores || game.scores.length === 0)
+    if (!game.scores || game.scores.length === 0) {
+        list.innerHTML = '<p style="color:#666;">No scores yet. Search for ninjas above to add them.</p>';
         return;
-    game.scores.sort((a, b) => b.score - a.score).forEach((s, idx) => {
-        list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; margin-bottom:5px; border-radius:4px;"><span>${idx + 1}. ${s.name} - <strong>${s.score}</strong></span><button onclick="deleteGameScore('${s.name}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;">X</button></div>`;
     }
-    );
+    const medals = ['🥇', '🥈', '🥉', '4.', '5.'];
+    game.scores.sort((a, b) => b.score - a.score).forEach((s, idx) => {
+        const medal = idx < 5 ? medals[idx] : `${idx + 1}.`;
+        const deleteId = s.ninjaId || s.name; // Support both old and new format
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:10px; margin-bottom:5px; border-radius:4px;">
+            <span>${medal} ${escapeHtml(s.name)} - <strong>${s.score}</strong></span>
+            <button onclick="deleteGameScore('${deleteId}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer; padding:4px 8px;">✕</button>
+        </div>`;
+    });
 }
+
+/* === NINJA SEARCH FOR GAME SCORES === */
+function searchNinjaForGame() {
+    const search = document.getElementById('ag-ninja-search').value.toLowerCase().trim();
+    const resultsDiv = document.getElementById('ag-ninja-results');
+
+    if (search.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    // Filter leaderboard for matching ninjas
+    const matches = leaderboardData.filter(n =>
+        (n.name && n.name.toLowerCase().includes(search)) ||
+        (n.username && n.username.toLowerCase().includes(search))
+    ).slice(0, 8); // Limit to 8 results
+
+    if (matches.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding:10px; color:#666;">No ninjas found</div>';
+        resultsDiv.style.display = 'block';
+        return;
+    }
+
+    resultsDiv.innerHTML = matches.map(n => `
+        <div onclick="selectNinjaForScore('${n.id}', '${escapeHtml(n.name)}')" 
+             style="padding:10px; cursor:pointer; border-bottom:1px solid #222; color:#fff;"
+             onmouseover="this.style.background='#222'" onmouseout="this.style.background='transparent'">
+            ${escapeHtml(n.name)} ${n.username ? '<span style="color:#666;">@' + escapeHtml(n.username) + '</span>' : ''}
+        </div>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function selectNinjaForScore(ninjaId, name) {
+    document.getElementById('ag-selected-ninja-id').value = ninjaId;
+    document.getElementById('ag-score-name').value = name;
+    document.getElementById('ag-ninja-search').value = '';
+    document.getElementById('ag-ninja-results').style.display = 'none';
+    document.getElementById('ag-score-val').focus();
+}
+
 function addGameScore() {
+    const ninjaId = document.getElementById('ag-selected-ninja-id').value;
     const name = document.getElementById('ag-score-name').value;
     const score = parseInt(document.getElementById('ag-score-val').value);
-    if (!name || isNaN(score))
-        return;
+
+    if (!ninjaId || !name) {
+        return showAlert("Error", "Please select a ninja from the search.");
+    }
+    if (isNaN(score)) {
+        return showAlert("Error", "Please enter a valid score.");
+    }
+
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return showAlert("Error", "Create a game first.");
+
     const newScores = activeGame.scores || [];
-    const filtered = newScores.filter(s => s.name !== name);
+    // Remove existing entry for same ninja (by ID)
+    const filtered = newScores.filter(s => s.ninjaId !== ninjaId);
     filtered.push({
+        ninjaId,
         name,
         score
     });
+
     DB.games.update(activeGame.id, { scores: filtered });
     gamesData = DB.games.getAll();
     renderGames();
     renderAdminGames();
+
+    // Clear inputs
+    document.getElementById('ag-selected-ninja-id').value = '';
     document.getElementById('ag-score-name').value = '';
     document.getElementById('ag-score-val').value = '';
 }
-function deleteGameScore(name) {
+
+function deleteGameScore(idOrName) {
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return;
-    const newScores = activeGame.scores.filter(s => s.name !== name);
+    // Support both old (name) and new (ninjaId) formats
+    const newScores = activeGame.scores.filter(s =>
+        s.ninjaId !== idOrName && s.name !== idOrName
+    );
     DB.games.update(activeGame.id, { scores: newScores });
     gamesData = DB.games.getAll();
     renderGames();
     renderAdminGames();
 }
+
 function archiveActiveGame() {
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return;
-    showConfirm("Archive this game? It will move to history.", () => {
-        DB.games.update(activeGame.id, { status: 'archived' });
-        gamesData = DB.games.getAll();
-        renderGames();
-        renderAdminGames();
-    });
+
+    // Get point values from inputs
+    const points = [
+        parseInt(document.getElementById('ag-pts-1').value) || 15,
+        parseInt(document.getElementById('ag-pts-2').value) || 10,
+        parseInt(document.getElementById('ag-pts-3').value) || 5,
+        parseInt(document.getElementById('ag-pts-4').value) || 3,
+        parseInt(document.getElementById('ag-pts-5').value) || 2
+    ];
+
+    // Sort scores and get top 5
+    const sortedScores = (activeGame.scores || []).sort((a, b) => b.score - a.score);
+    const top5 = sortedScores.slice(0, 5);
+
+    // Build confirmation message
+    let awardMsg = "End this game and award points?\n\n";
+    if (top5.length > 0) {
+        awardMsg += "Points to award:\n";
+        top5.forEach((s, i) => {
+            awardMsg += `${i + 1}. ${s.name}: +${points[i]} pts\n`;
+        });
+    } else {
+        awardMsg += "No scores recorded - no points will be awarded.";
+    }
+
+    showConfirm(awardMsg, async () => {
+        showLoading('Awarding points...');
+        try {
+            // Award points to top 5
+            for (let i = 0; i < top5.length; i++) {
+                const score = top5[i];
+                const ninja = leaderboardData.find(n => n.id === score.ninjaId);
+                if (ninja) {
+                    const newPoints = (ninja.points || 0) + points[i];
+                    await DB.leaderboard.update(ninja.id, { points: newPoints });
+                }
+            }
+
+            // Archive the game with winner info
+            await DB.games.update(activeGame.id, {
+                status: 'archived',
+                awardedPoints: points,
+                winners: top5.map((s, i) => ({ ...s, pointsAwarded: points[i] }))
+            });
+
+            // Reload data
+            leaderboardData = await DB.leaderboard.getAllAsync();
+            gamesData = DB.games.getAll();
+
+            renderGames();
+            renderAdminGames();
+            renderLeaderboard();
+
+            showAlert("Success", `Game ended! ${top5.length} ninja${top5.length !== 1 ? 's' : ''} awarded points.`);
+        } finally {
+            hideLoading();
+        }
+    }, 'success');
 }
 
 /* === SYSTEM === */
