@@ -103,10 +103,16 @@
                         <i class="fa-solid fa-user-ninja"></i>
                     </div>
                     <h1>
-                        Hello, <span id="current-user-name" style="color:var(--color-home)">Ninja</span>
-                        !
+                        Hello, <span id="current-user-name" style="color:var(--color-home)">Ninja</span>!
                     </h1>
                     <p>Welcome to the Dojo. Build something amazing today.</p>
+                    <!-- Ninja Points Display (hidden for staff) -->
+                    <div id="ninja-points-display" style="display:none; margin-top:10px;">
+                        <span
+                            style="background: linear-gradient(135deg, #04B88F, #027a5e); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 1rem;">
+                            ⭐ <span id="ninja-points-value">0</span> Points
+                        </span>
+                    </div>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button id="admin-sensei-btn" onclick="openSenseiModal()"
@@ -118,6 +124,8 @@
                         OUT</button>
                 </div>
             </header>
+            <!-- Ninja Notes Banner (shown when ninja has notes from senseis) -->
+            <div id="ninja-notes-banner" class="ninja-notes-banner" style="display:none;"></div>
             <div class="content-area">
                 <div id="home" class="tab-content active">
                     <div class="home-grid">
@@ -346,6 +354,17 @@
                                     style="margin:0;">
                             </div>
                             <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
+                            <hr style="border-color:#333; margin:15px 0;">
+                            <h4 style="color:#f39c12; margin:0 0 10px 0;"><i class="fa-solid fa-note-sticky"></i> Ninja
+                                Notes</h4>
+                            <div id="admin-ninja-notes-list" style="margin-bottom:10px;"></div>
+                            <textarea id="admin-note-text" class="admin-input"
+                                placeholder="Write a note for this ninja..."
+                                style="resize:vertical; min-height:50px; margin-bottom:5px;"></textarea>
+                            <button class="admin-btn btn-add" onclick="addNinjaNote()"
+                                style="background:#f39c12; color:black;">
+                                <i class="fa-solid fa-plus"></i> ADD NOTE
+                            </button>
                         </div>
                     </div>
                     <div class="admin-card">

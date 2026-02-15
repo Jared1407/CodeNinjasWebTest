@@ -29,6 +29,12 @@ class LocalDB {
         this.cacheLoaded = false;
     }
 
+    // Load cache from pre-fetched data (used by batch load)
+    loadCacheFromData(data) {
+        this.cache = data;
+        this.cacheLoaded = true;
+    }
+
     // Load cache from server
     async loadCache() {
         try {
@@ -166,13 +172,38 @@ class LocalDB {
         const deletedCount = toDelete.length;
         this.cache = this.cache.filter(item => !filterFn(item));
 
-        // Sync each deletion to server
-        toDelete.forEach(item => {
-            fetch(`${API_BASE}/${this.collection}/${item.id}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
-            }).catch(() => { });
-        });
+        // Use bulk delete endpoint if items share a common filterable field
+        // Fall back to individual deletes for complex filters
+        if (deletedCount > 0) {
+            // Try to detect simple field/value filter for bulk API
+            const sample = toDelete[0];
+            const bulkFields = ['points', 'status', 'belt'];
+            let usedBulk = false;
+
+            for (const field of bulkFields) {
+                const val = sample[field];
+                if (val !== undefined && toDelete.every(item => item[field] === val)) {
+                    // All deleted items share the same field value — use bulk API
+                    fetch(`${API_BASE}/${this.collection}/deleteWhere`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify({ filter: { field, value: val } })
+                    }).catch(() => { this._saveLocalFallback(); });
+                    usedBulk = true;
+                    break;
+                }
+            }
+
+            if (!usedBulk) {
+                // Fallback: individual deletes
+                toDelete.forEach(item => {
+                    fetch(`${API_BASE}/${this.collection}/${item.id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    }).catch(() => { });
+                });
+            }
+        }
 
         return deletedCount;
     }
@@ -253,11 +284,15 @@ const LocalAuth = {
         localStorage.removeItem('cn_auth_token');
     },
 
-    // Register a new Sensei (requires admin password)
+    // Register a new Sensei (requires admin auth + admin password)
     async registerSensei(email, password, name, adminPassword) {
+        const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ email, password, name, adminPassword })
         });
 
@@ -270,9 +305,13 @@ const LocalAuth = {
 
     // Change Sensei password
     async changePassword(email, currentPassword, newPassword) {
+        const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/auth/password`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ email, currentPassword, newPassword })
         });
 
@@ -308,12 +347,59 @@ const LocalAuth = {
 };
 
 /* ================= INITIALIZATION ================= */
-// Pre-load all collections from server
+// Essential collections needed to render the basic UI
+const ESSENTIAL_COLLECTIONS = ['news', 'rules', 'coins', 'catalog', 'leaderboard', 'settings'];
+// Secondary collections loaded in background after UI is visible
+const DEFERRED_COLLECTIONS = ['requests', 'queue', 'jams', 'jamSubmissions', 'games', 'challenges'];
+
+// Pre-load collections from server using batch API
+// Phase 1: essential collections (blocks UI) — Phase 2: secondary (background)
 async function initializeDatabase() {
-    console.log('Loading data from server...');
-    const collections = Object.keys(DB);
-    await Promise.all(collections.map(col => DB[col].loadCache()));
-    console.log('Database loaded from server');
+    console.log('Loading essential data from server...');
+    try {
+        // Phase 1: Load essential collections to get the UI painted fast
+        const res = await fetch(`${API_BASE}/batch?collections=${ESSENTIAL_COLLECTIONS.join(',')}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        for (const col of ESSENTIAL_COLLECTIONS) {
+            if (data[col]) {
+                DB[col].loadCacheFromData(data[col]);
+            }
+        }
+        console.log('Essential data loaded (phase 1)');
+
+        // Phase 2: Load secondary collections in background (non-blocking)
+        loadDeferredCollections();
+    } catch (err) {
+        console.warn('Batch load failed, falling back to individual loads');
+        const collections = Object.keys(DB);
+        await Promise.all(collections.map(col => DB[col].loadCache()));
+        console.log('Database loaded from server (individual fallback)');
+    }
+}
+
+// Background load of secondary collections
+async function loadDeferredCollections() {
+    try {
+        const res = await fetch(`${API_BASE}/batch?collections=${DEFERRED_COLLECTIONS.join(',')}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        for (const col of DEFERRED_COLLECTIONS) {
+            if (data[col]) {
+                DB[col].loadCacheFromData(data[col]);
+            }
+        }
+        console.log('Deferred data loaded (phase 2)');
+    } catch (err) {
+        console.warn('Deferred batch load failed, loading individually');
+        await Promise.all(DEFERRED_COLLECTIONS.map(col => DB[col].loadCache()));
+    }
 }
 
 // Initialize with default data if collections are empty

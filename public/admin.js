@@ -20,7 +20,7 @@ function renderAdminNews() {
     const nList = document.getElementById('admin-news-list');
     if (nList) {
         nList.innerHTML = '';
-        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`);
+        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${escapeHtml(n.title)}</h3><p>${escapeHtml(n.date)}</p></div><div class="status-badge" style="color:var(--color-games)">${escapeHtml(n.badge)} ></div></div><button onclick="openNewsModal('${escapeJsString(n.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${escapeJsString(n.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`);
     }
 }
 function openNewsModal(id = null) {
@@ -71,8 +71,8 @@ function renderAdminRules() {
     if (rList) {
         rList.innerHTML = '';
         rulesData.forEach(r => {
-            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : '';
-            rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${escapeHtml(r.penalty)}</div>` : '';
+            rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.desc)}</p></div>${b}</div><button onclick="openRulesModal('${escapeJsString(r.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${escapeJsString(r.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
         }
         );
     }
@@ -131,7 +131,7 @@ function renderAdminCoins() {
         coinsData.forEach((c, index) => {
             const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>';
             const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>';
-            cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+            cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${escapeHtml(c.task)}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
         }
         );
     }
@@ -203,10 +203,10 @@ function renderAdminCatalog() {
         catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`;
         let g = `<div class="admin-store-grid">`;
         catalogData.filter(i => i.tier === t).forEach(i => {
-            let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`;
+            let img = i.image && i.image.length > 5 ? `<img src="${sanitizeUrl(i.image)}">` : `<i class="fa-solid ${escapeHtml(i.icon)}"></i>`;
             let h = i.visible === false ? 'hidden' : '';
             let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : (i.category === 'limited' ? 'LIMITED' : 'STD'));
-            g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`;
+            g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${escapeHtml(i.name)}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${escapeHtml(String(i.cost))} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${escapeJsString(i.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${escapeJsString(i.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`;
         }
         );
         g += `</div>`;
@@ -348,10 +348,10 @@ function renderAdminInterest() {
     } else {
         st.sort((a, b) => b.interest - a.interest);
         st.forEach(s => {
-            let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`;
+            let img = s.image && s.image.length > 5 ? `<img src="${sanitizeUrl(s.image)}">` : `<i class="fa-solid ${escapeHtml(s.icon)}"></i>`;
             let extraClass = s.category === 'limited' ? 'style="border:1px solid #e74c3c;"' : '';
             let namePrefix = s.category === 'limited' ? '<span style="color:#e74c3c;font-size:0.7rem;">[LTD]</span> ' : '';
-            intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`;
+            intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${escapeHtml(s.name)}</h4><div class="interest-count-badge">${escapeHtml(String(s.interest))} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${escapeJsString(s.id)}')">RESET</button></div></div>`;
         }
         );
     }
@@ -369,7 +369,7 @@ function renderAdminRequests() {
         return;
     }
     pending.forEach(r => {
-        c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`;
+        c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${escapeHtml(r.name)}</div><div style="color:var(--color-catalog); font-weight:600;">${escapeHtml(r.item)}</div><div style="color:#888; font-size:0.75rem;">${escapeHtml(r.details)}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${escapeJsString(r.id)}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${escapeJsString(r.id)}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`;
     }
     );
 }
@@ -393,7 +393,7 @@ function renderAdminQueue() {
 
     activeQ.forEach(q => {
         const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`;
-        const detHtml = q.details ? `| ${q.details}` : '';
+        const detHtml = q.details ? `| ${escapeHtml(q.details)}` : '';
 
         // Determine Color
         let colorCode = '#444';
@@ -417,11 +417,11 @@ function renderAdminQueue() {
         qList.innerHTML += `
             <div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e; border-left: 4px solid ${colorCode};">
                 <div style="display:flex; justify-content:space-between;">
-                    <strong>${q.name}</strong> 
-                    <span class="status-badge" style="color:white; background:${colorCode};">${q.status}</span>
+                    <strong>${escapeHtml(q.name)}</strong> 
+                    <span class="status-badge" style="color:white; background:${colorCode};">${escapeHtml(q.status)}</span>
                 </div>
                 <div style="color:#aaa; font-size:0.8rem;">
-                    ${q.item} ${detHtml}
+                    ${escapeHtml(q.item)} ${detHtml}
                 </div>
                 <div style="margin-top:5px; display:flex; gap:5px;">
                     <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#555;">Pend</button>
@@ -455,8 +455,8 @@ function renderQueueHistory() {
         h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>';
     else
         p.forEach(q => {
-            const detHtml = q.details ? ` - ${q.details}` : '';
-            h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`;
+            const detHtml = q.details ? ` - ${escapeHtml(q.details)}` : '';
+            h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${escapeHtml(q.name)}</strong> - ${escapeHtml(q.item)} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`;
         }
         );
 }
@@ -506,6 +506,8 @@ function selectNinjaToEdit(id) {
     document.getElementById('admin-lb-obsidian').value = '';
     document.getElementById('admin-lb-gold').value = '';
     document.getElementById('admin-lb-silver').value = '';
+    document.getElementById('admin-note-text').value = '';
+    renderNinjaNotesAdmin(n);
 }
 function adminUpdatePoints() {
     if (!editingNinjaId)
@@ -658,7 +660,7 @@ function renderAdminJamsList() {
     c.innerHTML = '';
     jamsData.forEach(j => {
         const color = j.color || '#2ecc71';
-        c.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" onclick="openAdminJamModal('${j.id}')" style="margin:0; border-left-color:${color}; cursor:pointer; flex-grow:1;"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div><button onclick="deleteJam('${j.id}')" class="btn-mini" style="background:#e74c3c; margin-left:10px;">Del</button></div>`;
+        c.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" onclick="openAdminJamModal('${escapeJsString(j.id)}')" style="margin:0; border-left-color:${escapeHtml(color)}; cursor:pointer; flex-grow:1;"><div class="card-info"><h3>${escapeHtml(j.title)}</h3><p>${escapeHtml(j.dates)}</p></div><div class="status-badge" style="color:${escapeHtml(color)}">${escapeHtml(j.status || 'Active')}</div></div><button onclick="deleteJam('${escapeJsString(j.id)}')" class="btn-mini" style="background:#e74c3c; margin-left:10px;">Del</button></div>`;
     }
     );
 }
@@ -733,7 +735,7 @@ function renderJamSubmissionsList(jamId, currentWinners) {
     subs.forEach(s => {
         const isWinner = currentWinners.some(w => w.id === s.id);
         const check = isWinner ? 'checked' : '';
-        list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`;
+        list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${escapeHtml(s.id)}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${escapeHtml(s.ninjaName)}</div><div style="color:#888; font-size:0.7rem;">${escapeHtml(s.gameTitle)}</div></div><a href="${sanitizeUrl(s.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`;
     }
     );
 }
@@ -766,7 +768,7 @@ function renderAdminChallenges() {
     }
     challengesData.forEach(c => {
         const icon = getChallengeIcon(c.type);
-        list.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" style="margin:0; border-left: 4px solid #3498db;"><div class="card-info"><h3><i class="fa-solid ${icon}"></i> ${c.type}</h3><p>${c.desc} (${c.reward})</p></div></div><button onclick="openChallengeModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteChallenge('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+        list.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" style="margin:0; border-left: 4px solid #3498db;"><div class="card-info"><h3><i class="fa-solid ${icon}"></i> ${escapeHtml(c.type)}</h3><p>${escapeHtml(c.desc)} (${escapeHtml(c.reward)})</p></div></div><button onclick="openChallengeModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteChallenge('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
     }
     );
 }
@@ -1191,4 +1193,58 @@ function resetInterest(id) {
     DB.catalog.update(id, { interest: 0 });
     catalogData = DB.catalog.getAll();
     renderAdminInterest();
+}
+
+/* === NINJA NOTES === */
+function renderNinjaNotesAdmin(ninja) {
+    const list = document.getElementById('admin-ninja-notes-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const notes = ninja.notes || [];
+    if (notes.length === 0) {
+        list.innerHTML = '<p style="color:#666; font-size:0.8rem; margin:0;">No notes for this ninja.</p>';
+        return;
+    }
+    notes.forEach(note => {
+        const date = new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        list.innerHTML += `
+        <div class="admin-note-item">
+            <div style="flex:1;">
+                <div style="color:white; font-size:0.85rem;">${escapeHtml(note.text)}</div>
+                <div style="color:#888; font-size:0.7rem; margin-top:3px;">\u2014 ${escapeHtml(note.author)} \u00b7 ${date}</div>
+            </div>
+            <button onclick="deleteNinjaNote('${note.id}')" class="btn-mini" style="background:#e74c3c; flex-shrink:0;">\u2715</button>
+        </div>`;
+    });
+}
+
+function addNinjaNote() {
+    if (!editingNinjaId) return;
+    const text = document.getElementById('admin-note-text').value.trim();
+    if (!text) return showAlert('Error', 'Please write a note first.');
+    const ninja = leaderboardData.find(x => x.id === editingNinjaId);
+    if (!ninja) return;
+    const notes = ninja.notes || [];
+    const authorName = (currentUser && currentUser.name) ? currentUser.name : 'Sensei';
+    notes.push({
+        id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        text: text,
+        author: authorName,
+        createdAt: Date.now()
+    });
+    DB.leaderboard.update(editingNinjaId, { notes: notes });
+    leaderboardData = DB.leaderboard.getAll();
+    document.getElementById('admin-note-text').value = '';
+    renderNinjaNotesAdmin(leaderboardData.find(x => x.id === editingNinjaId));
+    showAlert('Note Added', `Note saved for ${formatName(ninja.name)}.`);
+}
+
+function deleteNinjaNote(noteId) {
+    if (!editingNinjaId) return;
+    const ninja = leaderboardData.find(x => x.id === editingNinjaId);
+    if (!ninja) return;
+    const notes = (ninja.notes || []).filter(n => n.id !== noteId);
+    DB.leaderboard.update(editingNinjaId, { notes: notes });
+    leaderboardData = DB.leaderboard.getAll();
+    renderNinjaNotesAdmin(leaderboardData.find(x => x.id === editingNinjaId));
 }

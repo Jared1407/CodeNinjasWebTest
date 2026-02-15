@@ -2,18 +2,36 @@
 import connectDB from '../../lib/mongodb.js';
 import Sensei from '../../lib/models/Sensei.js';
 import bcrypt from 'bcryptjs';
+import { requireAuth } from '../../lib/requireAuth.js';
+import { checkRateLimit, getClientIP } from '../../lib/rateLimit.js';
 
 const SALT_ROUNDS = 10;
+const MIN_PASSWORD_LENGTH = 8;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Rate limiting
+    const clientIP = getClientIP(req);
+    const rateLimit = checkRateLimit(clientIP, 3, 300000); // 3 attempts per 5 minutes
+    if (!rateLimit.allowed) {
+        return res.status(429).json({
+            error: 'Too many registration attempts. Please try again later.',
+            resetIn: rateLimit.resetIn
+        });
     }
 
     const { email, password, name, adminPassword } = req.body;
 
     if (!email || !password || !name) {
         return res.status(400).json({ error: 'Email, password, and name required' });
+    }
+
+    // Password complexity validation
+    if (password.length < MIN_PASSWORD_LENGTH) {
+        return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
     }
 
     try {
@@ -61,3 +79,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'Registration failed' });
     }
 }
+
+// Require admin authentication to register new senseis
+export default requireAuth(handler, { adminOnly: true });

@@ -147,11 +147,9 @@ async function subscribeToData() {
         // Load into local variables
         loadAllData();
 
-        // Initialize with defaults if empty
+        // Initialize with defaults if empty (adds to cache)
         initializeDefaultData();
 
-        // Re-load after defaults added
-        loadAllData();
         refreshAll();
     } finally {
         hideLoading();
@@ -221,6 +219,33 @@ function refreshAll() {
     renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists();
 }
 
+// Update ninja's points display in header
+function updateNinjaPointsDisplay() {
+    const display = document.getElementById('ninja-points-display');
+    const valueEl = document.getElementById('ninja-points-value');
+    if (!display || !valueEl) return;
+
+    // Only show for regular ninjas, not staff
+    const isStaff = currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei');
+    if (isStaff) {
+        display.style.display = 'none';
+        return;
+    }
+
+    // Find ninja in leaderboard by username or name
+    const ninja = leaderboardData.find(n =>
+        (n.username && currentUser.username && n.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+        (n.name && currentUser.name && n.name.toLowerCase() === currentUser.name.toLowerCase())
+    );
+
+    if (ninja) {
+        valueEl.textContent = ninja.points || 0;
+        display.style.display = 'block';
+    } else {
+        display.style.display = 'none';
+    }
+}
+
 /* ================= STARTUP ================= */
 window.onload = async function () {
     console.log("Window loaded. Connecting to server...");
@@ -284,7 +309,7 @@ function initRequest(id) {
     }
 
     if (mainImg) {
-        imgContainer.innerHTML = `<img src="${mainImg}" style="width:100%; height:100%; object-fit:contain;">`;
+        imgContainer.innerHTML = `<img src="${sanitizeUrl(mainImg)}" style="width:100%; height:100%; object-fit:contain;">`;
     } else {
         imgContainer.innerHTML = `<i class="fa-solid fa-cube" style="font-size:4rem; color:#333;"></i>`;
     }
@@ -293,7 +318,7 @@ function initRequest(id) {
     let colorOptionsHtml = '<option value="Default/No Preference">-- Select a Color (Optional) --</option>';
     if (typeof filamentData !== 'undefined' && Array.isArray(filamentData)) {
         filamentData.forEach(c => {
-            colorOptionsHtml += `<option value="${c}">${c}</option>`;
+            colorOptionsHtml += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
         });
     }
 
@@ -353,11 +378,11 @@ function initRequest(id) {
         if (item.variations && item.variations.length > 0) {
             item.variations.forEach((v, idx) => {
                 const active = idx === 0 ? 'active' : '';
-                gallery.innerHTML += `<div class="req-thumb ${active}" onclick="selectVariant(${idx}, '${v.image}')"><img src="${v.image}"></div>`;
+                gallery.innerHTML += `<div class="req-thumb ${active}" onclick="selectVariant(${idx}, '${sanitizeUrl(v.image)}')"><img src="${sanitizeUrl(v.image)}"></div>`;
             });
-            dynFields.innerHTML += `<p id="selected-variant-name" style="color:var(--color-catalog); text-align:center; font-weight:bold; margin-bottom:15px;">Selected: ${item.variations[0].name}</p>`;
+            dynFields.innerHTML += `<p id="selected-variant-name" style="color:var(--color-catalog); text-align:center; font-weight:bold; margin-bottom:15px;">Selected: ${escapeHtml(item.variations[0].name)}</p>`;
         } else {
-            dynFields.innerHTML += `<p style="color:#aaa; margin-bottom:15px;">Standard ${item.name}</p>`;
+            dynFields.innerHTML += `<p style="color:#aaa; margin-bottom:15px;">Standard ${escapeHtml(item.name)}</p>`;
         }
 
         // Color Selector for Premium

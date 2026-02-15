@@ -23,13 +23,8 @@ export default async function handler(req, res) {
 
         // GET - List all items in collection (PUBLIC - no auth required)
         if (req.method === 'GET') {
-            const items = await Model.find({});
-            // Transform _id to id for frontend compatibility
-            const result = items.map(item => {
-                const obj = item.toObject();
-                return obj;
-            });
-            return res.json(result);
+            const items = await Model.find({}).lean();
+            return res.json(items);
         }
 
         // For mutations (POST, PUT, DELETE), require authentication
@@ -44,6 +39,11 @@ export default async function handler(req, res) {
 
         // POST - Add new item
         if (req.method === 'POST') {
+            // Reject excessively large payloads (50KB limit)
+            const bodySize = JSON.stringify(req.body).length;
+            if (bodySize > 50000) {
+                return res.status(413).json({ error: 'Request body too large' });
+            }
             const id = `${collection}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const newItem = await Model.create({
                 id: id,
@@ -53,8 +53,11 @@ export default async function handler(req, res) {
             return res.json(newItem.toObject());
         }
 
-        // PUT - Replace entire collection
+        // PUT - Replace entire collection (ADMIN ONLY)
         if (req.method === 'PUT') {
+            if (!user.isAdmin) {
+                return res.status(403).json({ error: 'Admin access required for collection replacement' });
+            }
             // Delete all existing items
             await Model.deleteMany({});
 

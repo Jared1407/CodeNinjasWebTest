@@ -25,6 +25,17 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Filter with field required' });
     }
 
+    // Whitelist allowed filter fields to prevent abuse
+    const allowedFilterFields = ['points', 'status', 'belt', 'createdAt'];
+    if (!allowedFilterFields.includes(filter.field)) {
+        return res.status(400).json({ error: `Filter field '${filter.field}' is not allowed. Allowed: ${allowedFilterFields.join(', ')}` });
+    }
+
+    // Prevent MongoDB operator injection (value must be a primitive)
+    if (filter.value !== null && typeof filter.value === 'object') {
+        return res.status(400).json({ error: 'Filter value must be a primitive type' });
+    }
+
     try {
         await connectDB();
         const Model = getCollectionModel(collection);

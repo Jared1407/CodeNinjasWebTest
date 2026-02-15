@@ -92,6 +92,10 @@ function enterDashboard() {
             senseiCard.style.display = (currentUser.isAdmin || currentUser.role === 'admin') ? 'block' : 'none';
         }
 
+        // Hide ninja notes banner for staff
+        const notesBanner = document.getElementById('ninja-notes-banner');
+        if (notesBanner) notesBanner.style.display = 'none';
+
         // Load admin data
         loadCatalog();
         loadQueue();
@@ -105,6 +109,12 @@ function enterDashboard() {
 
         const senseiBtn = document.getElementById('admin-sensei-btn');
         if (senseiBtn) senseiBtn.style.display = 'none';
+
+        // Show ninja's points from leaderboard
+        updateNinjaPointsDisplay();
+
+        // Show ninja notes banner if they have notes from senseis
+        renderNinjaNotesBanner();
     }
     refreshAll();
 }
@@ -141,5 +151,36 @@ async function registerNewSensei() {
     } catch (err) {
         showAlert('Error', err.message || 'Failed to register sensei. Check admin password.');
     }
+}
+
+// Render notes banner for the currently logged-in ninja
+function renderNinjaNotesBanner() {
+    const banner = document.getElementById('ninja-notes-banner');
+    if (!banner || !currentUser) return;
+
+    // Find the current ninja in the leaderboard
+    const ninja = leaderboardData.find(n =>
+        (n.username && currentUser.username && n.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+        (n.name && currentUser.name && n.name.toLowerCase() === currentUser.name.toLowerCase())
+    );
+
+    const notes = ninja && ninja.notes ? ninja.notes : [];
+    if (notes.length === 0) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    banner.style.display = 'block';
+    banner.innerHTML = notes.map(note => {
+        const date = new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `
+        <div class="ninja-note-card">
+            <i class="fa-solid fa-note-sticky" style="color:#f39c12; margin-right:10px; flex-shrink:0;"></i>
+            <div style="flex:1;">
+                <div style="font-size:0.9rem;">${escapeHtml(note.text)}</div>
+                <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">\u2014 ${escapeHtml(note.author)} \u00b7 ${date}</div>
+            </div>
+        </div>`;
+    }).join('');
 }
 

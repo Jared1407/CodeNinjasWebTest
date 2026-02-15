@@ -23,9 +23,9 @@ export default async function handler(req, res) {
 
         // GET - Get single item (PUBLIC - no auth required)
         if (req.method === 'GET') {
-            const item = await Model.findOne({ id: id });
+            const item = await Model.findOne({ id: id }).lean();
             if (item) {
-                return res.json(item.toObject());
+                return res.json(item);
             } else {
                 return res.status(404).json({ error: 'Item not found' });
             }
