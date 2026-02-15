@@ -286,7 +286,7 @@ const LocalAuth = {
 
     // Register a new Sensei (requires admin auth + admin password)
     async registerSensei(email, password, name, adminPassword) {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('cn_auth_token');
         const res = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: {
@@ -305,7 +305,7 @@ const LocalAuth = {
 
     // Change Sensei password
     async changePassword(email, currentPassword, newPassword) {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('cn_auth_token');
         const res = await fetch(`${API_BASE}/auth/password`, {
             method: 'PUT',
             headers: {
