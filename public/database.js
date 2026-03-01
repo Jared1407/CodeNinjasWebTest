@@ -227,6 +227,8 @@ const DB = {
     jamSubmissions: new LocalDB('jamSubmissions'),
     games: new LocalDB('games'),
     challenges: new LocalDB('challenges'),
+    sandboxSubmissions: new LocalDB('sandboxSubmissions'),
+    sandboxChallenges: new LocalDB('sandboxChallenges'),
     settings: new LocalDB('settings')
 };
 
@@ -350,7 +352,7 @@ const LocalAuth = {
 // Essential collections needed to render the basic UI
 const ESSENTIAL_COLLECTIONS = ['news', 'rules', 'coins', 'catalog', 'leaderboard', 'settings'];
 // Secondary collections loaded in background after UI is visible
-const DEFERRED_COLLECTIONS = ['requests', 'queue', 'jams', 'jamSubmissions', 'games', 'challenges'];
+const DEFERRED_COLLECTIONS = ['requests', 'queue', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges'];
 
 // Pre-load collections from server using batch API
 // Phase 1: essential collections (blocks UI) — Phase 2: secondary (background)
@@ -396,6 +398,11 @@ async function loadDeferredCollections() {
             }
         }
         console.log('Deferred data loaded (phase 2)');
+
+        // Trigger UI update now that deferred data is ready
+        if (typeof window.onDeferredDataLoaded === 'function') {
+            window.onDeferredDataLoaded();
+        }
     } catch (err) {
         console.warn('Deferred batch load failed, loading individually');
         await Promise.all(DEFERRED_COLLECTIONS.map(col => DB[col].loadCache()));

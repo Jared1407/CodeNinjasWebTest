@@ -14,7 +14,7 @@ async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {

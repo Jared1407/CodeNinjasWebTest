@@ -107,6 +107,32 @@ function renderRules() { const c = document.getElementById('rules-feed'); if (!c
 function renderCoins() { const c = document.getElementById('coin-feed'); if (!c) return; c.innerHTML = ''; coinsData.forEach(i => c.innerHTML += `<li class="coin-item"><span>${escapeHtml(i.task)}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
 function filterCatalog(tier, btn) { currentTier = tier; document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active'); renderCatalog(); }
 
+let currentSandboxLevel = '1';
+function filterSandbox(level, btn) {
+    currentSandboxLevel = level;
+    const container = document.getElementById('sandbox-level-tabs');
+    if (container) {
+        container.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+    }
+    if (btn) btn.classList.add('active');
+    renderSandbox();
+}
+
+function renderSandbox() {
+    const c = document.getElementById('sandbox-feed'); if (!c) return; c.innerHTML = '';
+    const f = (sandboxChallengesData || []).filter(i => String(i.level) === currentSandboxLevel);
+    if (f.length === 0) c.innerHTML = '<p style="color:#666">No challenges available.</p>';
+    else f.forEach(i => {
+        const diffHtml = i.difficulty;
+        const ptsHtml = formatCostDisplay(i.points);
+        const isMix = i.level === 'mix';
+        const uniqueId = isMix ? i.name : (i.level + '_' + i.number);
+        const btnHtml = `<button class="btn-req" onclick="openSandboxSubmit('${escapeJsString(uniqueId)}')">Submit Link</button>`;
+
+        c.innerHTML += `<div class="store-card"><div class="store-info"><h4 style="margin:0;">${escapeHtml(i.name)}</h4><p style="margin:5px 0; font-size:0.8rem; color:#aaa;">${diffHtml} | <span style="color:var(--coin-gold);font-weight:bold;">${i.points} Gold Coins</span></p><div style="font-size:0.8rem; color:#bbb;">${escapeHtml(i.objective || i.desc)}</div></div><div class="store-action" style="margin-top:10px;">${btnHtml}</div></div>`;
+    });
+}
+
 function renderCatalog() {
     const c = document.getElementById('catalog-feed'); if (!c) return; c.innerHTML = '';
     if (!currentTier) currentTier = 'tier1';

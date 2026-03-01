@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {
@@ -32,13 +32,19 @@ export default async function handler(req, res) {
         }
 
         // For mutations (PUT, DELETE), require authentication
-        const token = extractToken(req.headers.authorization);
-        if (!token) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-        const user = await verifyToken(token);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid or expired token' });
+        // Exception: Ninjas can update their points in leaderboard without a token
+        const isPublicPut = req.method === 'PUT' && collection === 'leaderboard';
+
+        let user = null;
+        if (req.method !== 'GET' && !isPublicPut) {
+            const token = extractToken(req.headers.authorization);
+            if (!token) {
+                return res.status(401).json({ error: `Authentication required for ${req.method} on ${collection}` });
+            }
+            user = await verifyToken(token);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
+            }
         }
 
         // PUT - Update item

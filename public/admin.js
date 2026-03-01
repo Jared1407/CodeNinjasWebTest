@@ -13,6 +13,7 @@ function renderAdminLists() {
     renderAdminJamsList();
     renderAdminGames();
     renderAdminChallenges();
+    renderAdminSandbox();
 }
 
 /* === NEWS, RULES, COINS === */
@@ -1247,4 +1248,198 @@ function deleteNinjaNote(noteId) {
     DB.leaderboard.update(editingNinjaId, { notes: notes });
     leaderboardData = DB.leaderboard.getAll();
     renderNinjaNotesAdmin(leaderboardData.find(x => x.id === editingNinjaId));
+}
+
+/* === SANDBOX SUBMISSIONS === */
+function renderAdminSandbox() {
+    // 1. Render Challenges Manager List
+    renderAdminSandboxChallenges();
+
+    // 2. Render Pending Submissions List
+    const list = document.getElementById('admin-sandbox-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Show only Pending submissions
+    const pending = sandboxSubmissionsData.filter(s => s.status === 'Pending');
+    if (pending.length === 0) {
+        list.innerHTML = '<p style="color:#666; padding:10px;">No pending sandbox submissions.</p>';
+        return;
+    }
+
+    pending.forEach(s => {
+        const date = new Date(s.submittedAt).toLocaleDateString();
+        list.innerHTML += `<div class="req-item">
+            <div style="flex:1;">
+                <div style="color:white; font-weight:bold;">${escapeHtml(s.ninjaName)}</div>
+                <div style="color:var(--color-games); font-weight:600;">${escapeHtml(s.challengeName)}</div>
+                <div style="color:#888; font-size:0.8rem; margin-top:2px;">
+                    <a href="${sanitizeUrl(s.link)}" target="_blank" style="color:#3498db; text-decoration:none;">View Project Link <i class="fa-solid fa-external-link-alt"></i></a>
+                </div>
+                <div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${date}</div>
+            </div>
+            <div class="req-actions">
+                <button onclick="approveSandboxSubmission('${escapeJsString(s.id)}')"\n                    style="background:#2ecc71; color:black; font-weight:bold;">APPROVE (+${s.pointsPossible})</button>
+                <button onclick="denySandboxSubmission('${escapeJsString(s.id)}')"\n                    style="background:#e74c3c; color:white; font-weight:bold;">DENY</button>
+            </div>
+        </div>`;
+    });
+}
+
+function approveSandboxSubmission(id) {
+    const sub = sandboxSubmissionsData.find(s => s.id === id);
+    if (!sub) return;
+
+    showConfirm(`Approve project for ${sub.ninjaName} and award ${sub.pointsPossible} points?`, () => {
+        // Update submission status
+        DB.sandboxSubmissions.update(id, {
+            status: 'Approved',
+            reviewedAt: Date.now()
+        });
+
+        // Award points to Ninja
+        const ninja = leaderboardData.find(n => n.id === sub.ninjaId);
+        if (ninja) {
+            const newPoints = (ninja.points || 0) + (sub.pointsPossible || 0);
+            DB.leaderboard.update(ninja.id, { points: newPoints });
+            showAlert("Approved!", `Awarded ${sub.pointsPossible} points to ${ninja.name}.`);
+        } else {
+            showAlert("Warning", "Submission approved, but Ninja was not found to award points.");
+        }
+
+        // Refresh Data
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        leaderboardData = DB.leaderboard.getAll();
+        renderAdminSandbox();
+        renderLeaderboard();
+        renderAdminLbPreview();
+    }, 'success');
+}
+
+function denySandboxSubmission(id) {
+    const sub = sandboxSubmissionsData.find(s => s.id === id);
+    if (!sub) return;
+
+    showConfirm(`Deny project submission from ${sub.ninjaName}? No points will be awarded.`, () => {
+        // Update submission status
+        DB.sandboxSubmissions.update(id, {
+            status: 'Denied',
+            reviewedAt: Date.now()
+        });
+
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        renderAdminSandbox();
+        showAlert("Denied", "Submission was denied.");
+    });
+}
+
+function renderAdminSandboxChallenges() {
+    const list = document.getElementById('admin-sandbox-challenges-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Sort challenges by level then by name
+    const sorted = [...(sandboxChallengesData || [])].sort((a, b) => {
+        if (a.level !== b.level) return String(a.level).localeCompare(String(b.level));
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    if (sorted.length === 0) {
+        list.innerHTML = '<p style="color:#666; padding:10px;">No custom challenges found.</p>';
+        return;
+    }
+
+    sorted.forEach(c => {
+        list.innerHTML += `<div class="req-item" style="border-left: 3px solid var(--color-catalog);">
+            <div style="flex:1;">
+                <div style="color:white; font-weight:bold;">${escapeHtml(c.name)}</div>
+                <div style="color:#aaa; font-size:0.8rem;">Level ${escapeHtml(c.level)} | ${escapeHtml(c.difficulty)} | 🪙 ${c.points} pts</div>
+                <div style="color:#888; font-size:0.75rem; margin-top:2px; max-width:80%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(c.objective || c.desc || 'No description')}
+                </div>
+            </div>
+            <div class="req-actions">
+                <button onclick="openSandboxChallengeModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i> Edit</button>
+                <button onclick="deleteSandboxChallenge('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c; color:white;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>`;
+    });
+}
+
+function openSandboxChallengeModal(id = null) {
+    editingChallengeId = id;
+    if (id) {
+        // Edit existing
+        const c = sandboxChallengesData.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('sc-modal-title').innerText = 'Edit Sandbox Challenge';
+        document.getElementById('sc-level').value = c.level;
+        document.getElementById('sc-points').value = c.points;
+        document.getElementById('sc-name').value = c.name;
+        document.getElementById('sc-difficulty').value = c.difficulty || '';
+        document.getElementById('sc-desc').value = c.objective || c.desc || '';
+        document.getElementById('sc-theme').value = c.theme || '';
+        document.getElementById('sc-time').value = c.time || '';
+    } else {
+        // Create new
+        document.getElementById('sc-modal-title').innerText = 'New Sandbox Challenge';
+        document.getElementById('sc-level').value = '1';
+        document.getElementById('sc-points').value = '25';
+        document.getElementById('sc-name').value = '';
+        document.getElementById('sc-difficulty').value = '⭐';
+        document.getElementById('sc-desc').value = '';
+        document.getElementById('sc-theme').value = '';
+        document.getElementById('sc-time').value = '';
+    }
+    document.getElementById('sandbox-challenge-admin-modal').style.display = 'flex';
+}
+
+function saveSandboxChallenge() {
+    const level = document.getElementById('sc-level').value;
+    const points = parseInt(document.getElementById('sc-points').value) || 0;
+    const name = document.getElementById('sc-name').value.trim();
+    const difficulty = document.getElementById('sc-difficulty').value.trim();
+    const desc = document.getElementById('sc-desc').value.trim();
+    const theme = document.getElementById('sc-theme').value.trim();
+    const time = document.getElementById('sc-time').value.trim();
+
+    if (!name || !desc) {
+        showAlert('Missing Info', 'A name and description are required.');
+        return;
+    }
+
+    const data = {
+        level,
+        points,
+        name,
+        difficulty,
+        objective: desc,
+        desc: desc,
+        theme,
+        time
+    };
+
+    if (editingChallengeId) {
+        DB.sandboxChallenges.update(editingChallengeId, data);
+        showAlert('Saved', 'Challenge updated.');
+    } else {
+        data.number = sandboxChallengesData.filter(x => x.level === level).length + 1;
+        DB.sandboxChallenges.add(data);
+        showAlert('Saved', 'New challenge added.');
+    }
+
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+    if (typeof renderSandbox === 'function') renderSandbox(); // Update ninja UI if active
+    renderAdminSandboxChallenges();
+    document.getElementById('sandbox-challenge-admin-modal').style.display = 'none';
+}
+
+function deleteSandboxChallenge(id) {
+    showConfirm('Delete this sandbox challenge permanently?', () => {
+        DB.sandboxChallenges.delete(id);
+        sandboxChallengesData = DB.sandboxChallenges.getAll();
+        if (typeof renderSandbox === 'function') renderSandbox(); // Update ninja UI if active
+        renderAdminSandboxChallenges();
+        showAlert('Deleted', 'Challenge has been removed.');
+    });
 }

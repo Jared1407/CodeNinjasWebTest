@@ -17,6 +17,8 @@ let catalogData = [];
 let requestsData = [];
 let queueData = [];
 let leaderboardData = [];
+let sandboxSubmissionsData = [];
+let sandboxChallengesData = [];
 let filamentData = DEFAULT_FILAMENTS; // from config.js
 
 let currentTier = 'tier1';
@@ -181,6 +183,13 @@ function loadAllData() {
     jamSubmissions = DB.jamSubmissions.getAll();
     gamesData = DB.games.getAll();
     challengesData = DB.challenges.getAll();
+    sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+    if (sandboxChallengesData.length === 0 && typeof SANDBOX_CHALLENGES !== 'undefined') {
+        DB.sandboxChallenges.setAll(SANDBOX_CHALLENGES);
+        sandboxChallengesData = DB.sandboxChallenges.getAll();
+    }
 
     // Load filament settings
     const filamentSettings = DB.settings.get('filaments');
@@ -188,6 +197,23 @@ function loadAllData() {
         filamentData = filamentSettings.colors;
     }
 }
+
+// Called by database.js when secondary data finishes loading
+window.onDeferredDataLoaded = () => {
+    requestsData = DB.requests.getAll();
+    queueData = DB.queue.getAll();
+    jamsData = DB.jams.getAll();
+    jamSubmissions = DB.jamSubmissions.getAll();
+    gamesData = DB.games.getAll();
+    challengesData = DB.challenges.getAll();
+    sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+
+    // Refresh admin lists if user is admin
+    if (currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei')) {
+        if (typeof renderAdminLists === 'function') renderAdminLists();
+    }
+};
 
 function loadCatalog() {
     catalogData = DB.catalog.getAll();
@@ -214,9 +240,18 @@ function loadLeaderboard() {
 function loadJams() { jamsData = DB.jams.getAll(); renderJams(); }
 function loadGames() { gamesData = DB.games.getAll(); renderGames(); }
 
+function loadSandbox() {
+    if (typeof renderSandbox === 'function') renderSandbox();
+    if (currentUser?.isAdmin) {
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        if (typeof renderAdminSandbox === 'function') renderAdminSandbox();
+    }
+}
+
 function refreshAll() {
     renderNews(); renderJams(); renderGames(); renderRules(); renderCoins();
     renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists();
+    if (typeof renderSandbox === 'function') renderSandbox();
 }
 
 // Update ninja's points display in header
@@ -525,4 +560,43 @@ function selectVariant(idx, imgUrl) {
 
 function closeReqModal() {
     document.getElementById('req-modal').style.display = 'none';
+}
+
+function openSandboxSubmit(challengeId) {
+    if (!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
+    const chal = sandboxChallengesData.find(c => c.name === challengeId || (c.level + '_' + c.number) === challengeId);
+    if (!chal) return;
+    document.getElementById('sandbox-modal-title').innerText = chal.name;
+    document.getElementById('sandbox-modal-desc').innerText = chal.difficulty + " - " + (chal.objective || chal.desc);
+    document.getElementById('sandbox-submit-id').value = chal.level + '_' + chal.number + '_' + chal.name;
+    document.getElementById('sandbox-submit-points').value = chal.points;
+    document.getElementById('sandbox-submit-link').value = '';
+    document.getElementById('sandbox-submit-modal').style.display = 'flex';
+}
+
+function confirmSandboxSubmission() {
+    const link = document.getElementById('sandbox-submit-link').value.trim();
+    if (!link) { showAlert("Missing Link", "Please provide a link to your project."); return; }
+    if (!currentUser) { showAlert("Not Logged In", "Please log in to submit."); return; }
+
+    const chalName = document.getElementById('sandbox-modal-title').innerText;
+    const chalId = document.getElementById('sandbox-submit-id').value;
+    const points = parseInt(document.getElementById('sandbox-submit-points').value) || 0;
+
+    const sub = {
+        ninjaId: currentUser.id,
+        ninjaName: currentUser.name,
+        challengeId: chalId,
+        challengeName: chalName,
+        link: link,
+        pointsPossible: points,
+        status: "Pending",
+        submittedAt: Date.now()
+    };
+
+    DB.sandboxSubmissions.add(sub);
+    sandboxSubmissionsData.push(sub);
+
+    document.getElementById('sandbox-submit-modal').style.display = 'none';
+    showAlert("Submitted!", "Your project has been sent to Sensei for review.");
 }

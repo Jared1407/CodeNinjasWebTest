@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {
@@ -28,13 +28,20 @@ export default async function handler(req, res) {
         }
 
         // For mutations (POST, PUT, DELETE), require authentication
-        const token = extractToken(req.headers.authorization);
-        if (!token) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-        const user = await verifyToken(token);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid or expired token' });
+        // Exception: Ninjas can submit to these collections without a token
+        const publicPostCollections = ['requests', 'jamSubmissions', 'sandboxSubmissions'];
+        const isPublicPost = req.method === 'POST' && publicPostCollections.includes(collection);
+
+        let user = null;
+        if (req.method !== 'GET' && !isPublicPost) {
+            const token = extractToken(req.headers.authorization);
+            if (!token) {
+                return res.status(401).json({ error: `Authentication required for ${req.method} on ${collection}` });
+            }
+            user = await verifyToken(token);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
+            }
         }
 
         // POST - Add new item
@@ -55,7 +62,7 @@ export default async function handler(req, res) {
 
         // PUT - Replace entire collection (ADMIN ONLY)
         if (req.method === 'PUT') {
-            if (!user.isAdmin) {
+            if (!user || (!user.isAdmin && user.role !== 'admin')) {
                 return res.status(403).json({ error: 'Admin access required for collection replacement' });
             }
             // Delete all existing items

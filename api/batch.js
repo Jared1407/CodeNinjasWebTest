@@ -5,7 +5,7 @@ import { getCollectionModel } from '../lib/models/Collection.js';
 
 const validCollections = [
     'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-    'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+    'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
 ];
 
 // Exclude internal MongoDB fields from response to reduce payload
