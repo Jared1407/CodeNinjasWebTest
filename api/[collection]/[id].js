@@ -32,7 +32,8 @@ export default async function handler(req, res) {
         }
 
         // For mutations (PUT, DELETE), require authentication
-        // Exception: Ninjas can update their points in leaderboard without a token
+        // Exception: leaderboard PUT is allowed without auth for ninja point deductions
+        // TODO: Move point deductions server-side to close this properly (see BUG-1 in audit)
         const isPublicPut = req.method === 'PUT' && collection === 'leaderboard';
 
         let user = null;

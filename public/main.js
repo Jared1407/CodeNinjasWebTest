@@ -298,6 +298,20 @@ window.onload = async function () {
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
+
+            // Validate JWT token is present and not obviously expired
+            const token = localStorage.getItem('cn_auth_token');
+            const isStaff = currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei';
+            if (isStaff && !token) {
+                // Admin/sensei without token - force re-login
+                console.warn('Staff session without JWT token, requiring re-login');
+                localStorage.removeItem('cn_user');
+                currentUser = null;
+                document.getElementById('login-view').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+                return;
+            }
+
             // Only load data after user is authenticated
             await subscribeToData();
             enterDashboard();
@@ -538,10 +552,11 @@ function submitRequest() {
 function selectVariant(idx, imgUrl) {
     selectedVariantIdx = idx;
 
-    // Update main image
+    // Update main image (re-sanitize)
     const imgContainer = document.getElementById('req-img-container');
     if (imgUrl) {
-        imgContainer.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain;">`;
+        const safeUrl = sanitizeUrl(imgUrl);
+        imgContainer.innerHTML = `<img src="${safeUrl}" style="width:100%; height:100%; object-fit:contain;">`;
     }
 
     // Update thumbnails UI

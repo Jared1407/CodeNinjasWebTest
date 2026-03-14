@@ -98,6 +98,7 @@ class LocalDB {
         }).catch(err => {
             console.warn('Server sync failed, using localStorage fallback');
             this._saveLocalFallback();
+            if (typeof showToast === 'function') showToast('Change saved locally — server sync failed. Check your connection.', 'warning');
         });
 
         return newItem;
@@ -114,9 +115,20 @@ class LocalDB {
                 method: 'PUT',
                 headers: getAuthHeaders(true),
                 body: JSON.stringify(data)
+            }).then(res => {
+                if (!res.ok) {
+                    console.warn(`Server rejected update (${res.status}) for ${this.collection}/${id}`);
+                    this._saveLocalFallback();
+                    if (res.status === 401 || res.status === 403) {
+                        if (typeof showToast === 'function') showToast('Session expired \xe2\x80\x94 please log out and log back in.', 'error');
+                    } else {
+                        if (typeof showToast === 'function') showToast('Update saved locally \xe2\x80\x94 server error.', 'warning');
+                    }
+                }
             }).catch(err => {
                 console.warn('Server sync failed, using localStorage fallback');
                 this._saveLocalFallback();
+                if (typeof showToast === 'function') showToast('Update saved locally \xe2\x80\x94 server sync failed.', 'warning');
             });
 
             return this.cache[idx];
@@ -135,6 +147,7 @@ class LocalDB {
         }).catch(err => {
             console.warn('Server sync failed, using localStorage fallback');
             this._saveLocalFallback();
+            if (typeof showToast === 'function') showToast('Delete saved locally — server sync failed.', 'warning');
         });
 
         return true;
@@ -151,6 +164,7 @@ class LocalDB {
         }).catch(err => {
             console.warn('Server sync failed, using localStorage fallback');
             this._saveLocalFallback();
+            if (typeof showToast === 'function') showToast('Bulk update saved locally — server sync failed.', 'warning');
         });
     }
 

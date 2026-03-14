@@ -44,7 +44,7 @@ async function attemptAdminLogin() {
         await loginAsAdmin();
     } catch (err) {
         document.getElementById('login-error-msg').style.display = 'block';
-        document.getElementById('login-error-msg').innerText = 'Access Denied. (Default password: admin)';
+        document.getElementById('login-error-msg').innerText = 'Access Denied. Incorrect email or password.';
     }
 }
 

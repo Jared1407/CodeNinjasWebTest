@@ -2500,3 +2500,152 @@ header {
         padding: 0 15px 10px 15px;
     }
 }
+
+/* === SKELETON LOADER === */
+.skeleton-card {
+    background: var(--card-bg);
+    border-radius: var(--m3-shape-large);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.skeleton-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.skeleton-line:first-child {
+    width: 60%;
+}
+
+.skeleton-line:nth-child(2) {
+    width: 40%;
+}
+
+.skeleton-line:nth-child(3) {
+    width: 80%;
+}
+
+@keyframes skeleton-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* === TOAST NOTIFICATION === */
+.toast-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999998;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--m3-surface-high);
+    color: white;
+    padding: 14px 22px;
+    border-radius: var(--m3-shape-medium);
+    box-shadow: var(--m3-elevation-4);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    animation: toast-in 0.35s cubic-bezier(0.2, 0, 0, 1);
+    border-left: 4px solid var(--cn-green);
+    max-width: 380px;
+}
+
+.toast.toast-warning {
+    border-left-color: #e67e22;
+}
+
+.toast.toast-error {
+    border-left-color: #e74c3c;
+}
+
+.toast.toast-out {
+    animation: toast-out 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes toast-out {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+}
+
+/* Card-enter and tab-entering animations removed — original fadeIn handles transitions */
+
+/* === INLINE LOADING SPINNER (for tab transitions) === */
+.tab-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tab-loading-spinner::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(4, 184, 143, 0.2);
+    border-top-color: var(--cn-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.tab-loading-spinner::after {
+    content: 'Loading...';
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

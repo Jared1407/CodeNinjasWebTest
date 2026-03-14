@@ -1,10 +1,23 @@
 {
   "name": "codeninja-dashboard",
-  "version": "0.9.0",
-  "description": "Code Ninjas Dashboard - Northridge Location (Vercel Edition)",
+  "version": "1.0.0",
+  "description": "A full-stack student dashboard for Code Ninjas dojos — coin rewards, leaderboards, game jams, 3D print queue, and a catalog store. Built with vanilla JS and deployed on Vercel with MongoDB Atlas.",
   "type": "module",
+  "license": "MIT",
+  "author": "Jared",
+  "keywords": [
+    "code-ninjas",
+    "dashboard",
+    "education",
+    "gamification",
+    "vercel",
+    "mongodb",
+    "serverless"
+  ],
   "scripts": {
+    "dev": "vercel dev",
     "build": "echo 'Build handled by Vercel'",
+    "deploy": "vercel --prod",
     "migrate": "node scripts/migrate-data.js"
   },
   "dependencies": {

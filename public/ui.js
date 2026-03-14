@@ -9,12 +9,16 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-// Sanitize URLs to prevent javascript: protocol XSS
+// Sanitize URLs to only allow safe protocols (https, http, relative)
 function sanitizeUrl(url) {
     if (!url) return '';
     const s = String(url).trim();
-    if (/^javascript:/i.test(s) || /^data:text\/html/i.test(s) || /^vbscript:/i.test(s)) return '';
-    return escapeHtml(s);
+    // Allow relative paths and http(s) only
+    if (/^https?:\/\//i.test(s) || s.startsWith('/') || s.startsWith('./')) {
+        return escapeHtml(s);
+    }
+    // Block everything else
+    return '';
 }
 
 // Escape a string for safe use inside inline JS (e.g., onclick handlers)
@@ -23,19 +27,45 @@ function escapeJsString(str) {
     return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
+/* === TOAST NOTIFICATIONS === */
+function showToast(message, type = 'info', durationMs = 4000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast${type === 'warning' ? ' toast-warning' : type === 'error' ? ' toast-error' : ''}`;
+    const icon = type === 'error' ? 'fa-circle-xmark' : type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check';
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${escapeHtml(message)}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, durationMs);
+}
+
+/* === SKELETON PLACEHOLDERS === */
+function renderSkeletons(container, count = 4) {
+    if (!container) return;
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `<div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-lines"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>`;
+    }
+    container.innerHTML = html;
+}
+
 /* === HELPER FUNCTIONS === */
 function formatName(name) {
     if (!name) return 'Ninja';
-    // Sanitize input to prevent XSS
-    const safeName = escapeHtml(name);
-    if (safeName.includes('.') && safeName.split(' ').length === 2 && safeName.split(' ')[1].length === 2) return safeName;
-    const clean = safeName.replace(/\\./g, ' ');
+    const raw = String(name);
+    // Check for already-formatted names like "kai.s" before processing
+    if (raw.includes('.') && raw.split(' ').length === 2 && raw.split(' ')[1].length === 2) return escapeHtml(raw);
+    const clean = raw.replace(/\./g, ' ');
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-    let lastInitial = "";
-    if (parts.length > 1) { lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + "."; }
-    return first + lastInitial;
+    let lastInitial = '';
+    if (parts.length > 1) { lastInitial = ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.'; }
+    // Escape HTML AFTER string processing to avoid double-encoding
+    return escapeHtml(first + lastInitial);
 }
 
 function parseMarkdown(text, customColor) {
@@ -93,12 +123,13 @@ function showTab(id, el) {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
 
-    // Load data for each tab (local database)
+    // Load data for each tab
     if (id === 'catalog') loadCatalog();
     else if (id === 'queue') loadQueue();
     else if (id === 'leaderboard') loadLeaderboard();
     else if (id === 'jams') loadJams();
     else if (id === 'games') loadGames();
+    else if (id === 'sandbox') loadSandbox();
 }
 
 /* === RENDERERS === */
@@ -123,7 +154,7 @@ function renderSandbox() {
     const f = (sandboxChallengesData || []).filter(i => String(i.level) === currentSandboxLevel);
     if (f.length === 0) c.innerHTML = '<p style="color:#666">No challenges available.</p>';
     else f.forEach(i => {
-        const diffHtml = i.difficulty;
+        const diffHtml = escapeHtml(i.difficulty);
         const ptsHtml = formatCostDisplay(i.points);
         const isMix = i.level === 'mix';
         const uniqueId = isMix ? i.name : (i.level + '_' + i.number);
