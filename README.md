@@ -201,5 +201,5 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ---
 
 <p align="center">
-  Built by Sensei Jared for <strong>Code Ninjas</strong> — <em>"Kids Love It Here"</em>
+  Built by Sensei Jared for <strong>Code Ninjas</strong> — <em>"Teaching kids what I learned in university"</em>
 </p>
