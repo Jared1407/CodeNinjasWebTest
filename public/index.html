@@ -4,15 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Code Ninjas Dashboard - Cerritos</title>
+    <title>Code Ninjas Dashboard - Northridge</title>
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Non-blocking Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
     <link rel="stylesheet" href="styles.css">
     <!-- Local Database - replaces Firebase -->
+    <script src="sandboxData.js" defer></script>
     <script src="database.js" defer></script>
 </head>
 
 <body>
+    <!-- Loading Overlay - shows during data fetching -->
+    <div id="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+
     <div id="login-view">
         <div class="bg-circle circle-1"></div>
         <div class="bg-circle circle-2"></div>
@@ -69,6 +86,10 @@
                 <i class="fa-solid fa-gamepad"></i>
                 <span>Games</span>
             </div>
+            <div class="nav-item sandbox-theme" onclick="showTab('sandbox', this)">
+                <i class="fa-solid fa-laptop-code"></i>
+                <span>Sandbox</span>
+            </div>
             <div class="nav-item catalog-theme" onclick="showTab('catalog', this)">
                 <i class="fa-solid fa-cube"></i>
                 <span>Prizes</span>
@@ -95,21 +116,29 @@
                         <i class="fa-solid fa-user-ninja"></i>
                     </div>
                     <h1>
-                        Hello, <span id="current-user-name" style="color:var(--color-home)">Ninja</span>
-                        !
+                        Hello, <span id="current-user-name" style="color:var(--color-home)">Ninja</span>!
                     </h1>
                     <p>Welcome to the Dojo. Build something amazing today.</p>
+                    <!-- Ninja Points Display (hidden for staff) -->
+                    <div id="ninja-points-display" style="display:none; margin-top:10px;">
+                        <span
+                            style="background: linear-gradient(135deg, #04B88F, #027a5e); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 1rem;">
+                            ⭐ <span id="ninja-points-value">0</span> Points
+                        </span>
+                    </div>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <!-- <button id="admin-sensei-btn" onclick="openSenseiModal()"
-                        style="display:none; background:var(--cn-caribbean-green); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                    <button id="admin-sensei-btn" onclick="openSenseiModal()"
+                        style="display:none; background:var(--cn-green); border:none; color:var(--cn-midnight); font-weight:bold; padding:5px 12px; border-radius:var(--m3-shape-pill); cursor:pointer; font-size:0.8rem;">
                         <i class="fa-solid fa-user-plus"></i> ADD SENSEI
-                    </button> -->
+                    </button>
                     <button onclick="logout()"
-                        style="background:none; border:1px solid #444; color:#888; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">LOG
+                        style="background:none; border:1px solid #444; color:#888; padding:5px 12px; border-radius:var(--m3-shape-pill); cursor:pointer; font-size:0.8rem;">LOG
                         OUT</button>
                 </div>
             </header>
+            <!-- Ninja Notes Banner (shown when ninja has notes from senseis) -->
+            <div id="ninja-notes-banner" class="ninja-notes-banner" style="display:none;"></div>
             <div class="content-area">
                 <div id="home" class="tab-content active">
                     <div class="home-grid">
@@ -194,6 +223,18 @@
                         <div id="lb-list" class="lb-list"></div>
                     </div>
                 </div>
+                <div id="sandbox" class="tab-content">
+                    <div class="section-title">
+                        💻 Sandbox Challenges
+                    </div>
+                    <div class="tier-tabs" id="sandbox-level-tabs">
+                        <button class="tier-btn active" onclick="filterSandbox('1', this)">Level 1</button>
+                        <button class="tier-btn" onclick="filterSandbox('2', this)">Level 2</button>
+                        <button class="tier-btn" onclick="filterSandbox('3', this)">Level 3</button>
+                        <button class="tier-btn" onclick="filterSandbox('mix', this)">Mix Sets</button>
+                    </div>
+                    <div id="sandbox-feed" class="store-grid"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -226,6 +267,10 @@
                 <div id="nav-admin-games" class="admin-nav-btn" onclick="showAdminSection('admin-games', this)">
                     <i class="fa-solid fa-gamepad"></i>
                     Games
+                </div>
+                <div id="nav-admin-sandbox" class="admin-nav-btn" onclick="showAdminSection('admin-sandbox', this)">
+                    <i class="fa-solid fa-laptop-code"></i>
+                    Sandbox
                 </div>
                 <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)">
                     <i class="fa-solid fa-cube"></i>
@@ -285,7 +330,8 @@
                             <button class="btn-add" onclick="adminAddNinja()">ADD</button>
                         </div>
                     </div>
-                    <div class="admin-card" style="background: linear-gradient(135deg, #002340 0%, #04B88F 100%);">
+                    <div id="sensei-management-card" class="admin-card"
+                        style="display:none; background: linear-gradient(135deg, #002340 0%, #04B88F 100%);">
                         <h3 style="color:white;"><i class="fa-solid fa-user-ninja"></i> Sensei Management</h3>
                         <button class="btn-add" onclick="openSenseiModal()"
                             style="background:white; color:#002340; width:100%;">
@@ -337,6 +383,17 @@
                                     style="margin:0;">
                             </div>
                             <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
+                            <hr style="border-color:#333; margin:15px 0;">
+                            <h4 style="color:#f39c12; margin:0 0 10px 0;"><i class="fa-solid fa-note-sticky"></i> Ninja
+                                Notes</h4>
+                            <div id="admin-ninja-notes-list" style="margin-bottom:10px;"></div>
+                            <textarea id="admin-note-text" class="admin-input"
+                                placeholder="Write a note for this ninja..."
+                                style="resize:vertical; min-height:50px; margin-bottom:5px;"></textarea>
+                            <button class="admin-btn btn-add" onclick="addNinjaNote()"
+                                style="background:#f39c12; color:black;">
+                                <i class="fa-solid fa-plus"></i> ADD NOTE
+                            </button>
                         </div>
                     </div>
                     <div class="admin-card">
@@ -376,20 +433,63 @@
                             <button class="btn-blue" onclick="saveActiveGame()">UPDATE GAME DETAILS</button>
                         </div>
                         <h3>🏆 Manage Scores</h3>
+                        <!-- Ninja Selector -->
+                        <div style="position: relative; margin-bottom:10px;">
+                            <input type="text" id="ag-ninja-search" class="admin-input" placeholder="Search ninja..."
+                                oninput="searchNinjaForGame()" style="margin:0;">
+                            <div id="ag-ninja-results"
+                                style="position:absolute; top:100%; left:0; right:0; background:#111; border-radius:0 0 6px 6px; max-height:150px; overflow-y:auto; z-index:100; display:none;">
+                            </div>
+                            <input type="hidden" id="ag-selected-ninja-id">
+                        </div>
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
-                            <input type="text" id="ag-score-name" class="admin-input"
-                                placeholder="Ninja Name (e.g. Kai S.)" style="flex:2; margin:0;">
-                            <input type="text" id="ag-score-val" class="admin-input" placeholder="Score"
+                            <input type="text" id="ag-score-name" class="admin-input" placeholder="Selected Ninja"
+                                style="flex:2; margin:0;" readonly>
+                            <input type="number" id="ag-score-val" class="admin-input" placeholder="Score"
                                 style="flex:1; margin:0;">
                             <button class="btn-add" onclick="addGameScore()" style="width:auto; margin:0;">ADD</button>
                         </div>
                         <div id="admin-game-scores-list"></div>
-                        <div style="margin-top:20px; border-top:1px solid #444; padding-top:20px;">
-                            <button class="interest-reset-btn" onclick="archiveActiveGame()">ARCHIVE & START
-                                NEW</button>
+
+                        <!-- Point Configuration -->
+                        <div style="margin-top:20px; border-top:1px solid #444; padding-top:15px;">
+                            <h4 style="color:#aaa; margin-bottom:10px;">🎯 End-Game Point Rewards</h4>
+                            <div
+                                style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:15px;">
+                                <div style="text-align:center;">
+                                    <label style="color:gold; font-size:0.7rem;">1st</label>
+                                    <input type="number" id="ag-pts-1" class="admin-input" value="15"
+                                        style="margin:0; text-align:center;">
+                                </div>
+                                <div style="text-align:center;">
+                                    <label style="color:silver; font-size:0.7rem;">2nd</label>
+                                    <input type="number" id="ag-pts-2" class="admin-input" value="10"
+                                        style="margin:0; text-align:center;">
+                                </div>
+                                <div style="text-align:center;">
+                                    <label style="color:#cd7f32; font-size:0.7rem;">3rd</label>
+                                    <input type="number" id="ag-pts-3" class="admin-input" value="5"
+                                        style="margin:0; text-align:center;">
+                                </div>
+                                <div style="text-align:center;">
+                                    <label style="color:#888; font-size:0.7rem;">4th</label>
+                                    <input type="number" id="ag-pts-4" class="admin-input" value="3"
+                                        style="margin:0; text-align:center;">
+                                </div>
+                                <div style="text-align:center;">
+                                    <label style="color:#888; font-size:0.7rem;">5th</label>
+                                    <input type="number" id="ag-pts-5" class="admin-input" value="2"
+                                        style="margin:0; text-align:center;">
+                                </div>
+                            </div>
+                            <button class="interest-reset-btn" onclick="archiveActiveGame()"
+                                style="background:#e74c3c;">
+                                <i class="fa-solid fa-trophy"></i> END GAME & AWARD POINTS
+                            </button>
                         </div>
                     </div>
                 </div>
+
                 <div id="admin-cat" class="admin-section">
                     <div class="admin-card">
                         <h3>
@@ -433,6 +533,21 @@
                             <h4 style="color:#aaa; margin-top:0;">History</h4>
                             <div id="history-content"></div>
                         </div>
+                    </div>
+                </div>
+                <div id="admin-sandbox" class="admin-section">
+                    <div class="admin-card">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="margin:0;">📝 Manage Sandbox Challenges</h3>
+                            <button onclick="openSandboxChallengeModal()" class="btn-add"
+                                style="width:auto; padding:5px 10px; font-size:0.8rem;">+ Add Challenge</button>
+                        </div>
+                        <div id="admin-sandbox-challenges-list"></div>
+                    </div>
+                    <div class="admin-card" style="border-color: var(--color-games); margin-top:20px;">
+                        <h3>📥 Pending Sandbox Submissions</h3>
+                        <div id="admin-sandbox-list"></div>
                     </div>
                 </div>
             </div>
@@ -679,6 +794,39 @@
             </div>
         </div>
     </div>
+    <div id="sandbox-challenge-admin-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2 style="color:white; margin:0;" id="sc-modal-title">Edit Sandbox Challenge</h2>
+                <button onclick="document.getElementById('sandbox-challenge-admin-modal').style.display='none'"
+                    style="background:none; border:none; color:white;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <select id="sc-level" class="admin-input" style="flex:1;">
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="mix">Mix Sets</option>
+                    </select>
+                    <input type="text" id="sc-points" class="admin-input" placeholder="Points (e.g. 25)"
+                        style="flex:1;">
+                </div>
+                <input type="text" id="sc-name" class="admin-input" placeholder="Name (e.g. The Floor is Lava)">
+                <input type="text" id="sc-difficulty" class="admin-input" placeholder="Difficulty (e.g. ⭐ or 🌶️)">
+                <textarea id="sc-desc" class="admin-input" placeholder="Description/Objective"
+                    style="min-height:80px; resize:vertical;"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="sc-theme" class="admin-input" placeholder="Theme / Focus">
+                    <input type="text" id="sc-time" class="admin-input" placeholder="Expected Time">
+                </div>
+                <button onclick="saveSandboxChallenge()" class="btn-blue"
+                    style="background:var(--color-catalog); color:white; margin-top:10px;">SAVE CHALLENGE</button>
+            </div>
+        </div>
+    </div>
     <div id="challenge-admin-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
@@ -703,6 +851,27 @@
                 <label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label>
                 <input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left">
                 <button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button>
+            </div>
+        </div>
+    </div>
+    <div id="sandbox-submit-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h2 style="color:white; margin:0;">Submit Sandbox Challenge</h2>
+                <button onclick="document.getElementById('sandbox-submit-modal').style.display='none'"
+                    style="background:none; border:none; color:white;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3 id="sandbox-modal-title" style="color:var(--color-games); margin-top:0;">Challenge Name</h3>
+                <p id="sandbox-modal-desc" style="color:#aaa; font-size:0.9rem; margin-bottom:15px;"></p>
+                <input type="hidden" id="sandbox-submit-id">
+                <input type="hidden" id="sandbox-submit-points">
+                <label class="req-label">Project Link (MakeCode/Scratch/etc):</label>
+                <input type="text" id="sandbox-submit-link" class="req-input" placeholder="https://...">
+                <button onclick="confirmSandboxSubmission()" class="btn-blue"
+                    style="background:var(--color-games); color:black; margin-top:10px;">SUBMIT LINK</button>
             </div>
         </div>
     </div>
@@ -731,6 +900,8 @@
             </div>
         </div>
     </div>
+    <!-- Toast notification container -->
+    <div id="toast-container" class="toast-container"></div>
     <script src="config.js" defer></script>
     <script src="ui.js" defer></script>
     <script src="auth.js" defer></script>

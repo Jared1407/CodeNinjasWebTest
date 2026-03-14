@@ -1,22 +1,79 @@
 // ui.js
 
+/* === SECURITY HELPERS === */
+// Escape HTML entities to prevent XSS attacks
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+// Sanitize URLs to only allow safe protocols (https, http, relative)
+function sanitizeUrl(url) {
+    if (!url) return '';
+    const s = String(url).trim();
+    // Allow relative paths and http(s) only
+    if (/^https?:\/\//i.test(s) || s.startsWith('/') || s.startsWith('./')) {
+        return escapeHtml(s);
+    }
+    // Block everything else
+    return '';
+}
+
+// Escape a string for safe use inside inline JS (e.g., onclick handlers)
+function escapeJsString(str) {
+    if (!str) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/* === TOAST NOTIFICATIONS === */
+function showToast(message, type = 'info', durationMs = 4000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast${type === 'warning' ? ' toast-warning' : type === 'error' ? ' toast-error' : ''}`;
+    const icon = type === 'error' ? 'fa-circle-xmark' : type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check';
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${escapeHtml(message)}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, durationMs);
+}
+
+/* === SKELETON PLACEHOLDERS === */
+function renderSkeletons(container, count = 4) {
+    if (!container) return;
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `<div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-lines"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>`;
+    }
+    container.innerHTML = html;
+}
+
 /* === HELPER FUNCTIONS === */
 function formatName(name) {
     if (!name) return 'Ninja';
-    if (name.includes('.') && name.split(' ').length === 2 && name.split(' ')[1].length === 2) return name;
-    const clean = name.replace(/\./g, ' ');
+    const raw = String(name);
+    // Check for already-formatted names like "kai.s" before processing
+    if (raw.includes('.') && raw.split(' ').length === 2 && raw.split(' ')[1].length === 2) return escapeHtml(raw);
+    const clean = raw.replace(/\./g, ' ');
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-    let lastInitial = "";
-    if (parts.length > 1) { lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + "."; }
-    return first + lastInitial;
+    let lastInitial = '';
+    if (parts.length > 1) { lastInitial = ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.'; }
+    // Escape HTML AFTER string processing to avoid double-encoding
+    return escapeHtml(first + lastInitial);
 }
 
 function parseMarkdown(text, customColor) {
     if (!text) return "";
     const color = customColor || '#f1c40f';
-    return text.replace(/\*\*(.*?)\*\*/g, `<span style="color:${color}; font-weight:900; text-shadow:0 0 10px ${color}80;">$1</span>`);
+    // Escape first, then apply markdown transforms (safe because we control the wrapping HTML)
+    const safe = escapeHtml(text);
+    return safe.replace(/\*\*(.*?)\*\*/g, `<span style="color:${escapeHtml(color)}; font-weight:900; text-shadow:0 0 10px ${escapeHtml(color)}80;">$1</span>`);
 }
 
 function getChallengeIcon(type) {
@@ -40,7 +97,8 @@ function formatCostDisplay(costVal) {
 
 function formatCoinBreakdown(valStr) {
     if (!valStr) return '';
-    if (valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
+    const safeVal = escapeHtml(valStr);
+    if (safeVal.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${safeVal}</span>`;
     const num = parseInt(valStr.replace(/\D/g, '')) || 0;
     if (num === 0) return `<span class="coin-val silver">0</span>`;
     let html = '';
@@ -65,19 +123,46 @@ function showTab(id, el) {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
 
-    // Load data for each tab (local database)
+    // Load data for each tab
     if (id === 'catalog') loadCatalog();
     else if (id === 'queue') loadQueue();
     else if (id === 'leaderboard') loadLeaderboard();
     else if (id === 'jams') loadJams();
     else if (id === 'games') loadGames();
+    else if (id === 'sandbox') loadSandbox();
 }
 
 /* === RENDERERS === */
-function renderNews() { const c = document.getElementById('news-feed'); if (!c) return; c.innerHTML = ''; newsData.forEach(i => c.innerHTML += `<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); }
-function renderRules() { const c = document.getElementById('rules-feed'); if (!c) return; c.innerHTML = ''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if (!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
-function renderCoins() { const c = document.getElementById('coin-feed'); if (!c) return; c.innerHTML = ''; coinsData.forEach(i => c.innerHTML += `<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
+function renderNews() { const c = document.getElementById('news-feed'); if (!c) return; c.innerHTML = ''; newsData.forEach(i => c.innerHTML += `<div class="list-card passed"><div class="card-info"><h3>${escapeHtml(i.title)}</h3><p>${escapeHtml(i.date)}</p></div><div class="status-badge" style="color:var(--color-games)">${escapeHtml(i.badge)} ></div></div>`); }
+function renderRules() { const c = document.getElementById('rules-feed'); if (!c) return; c.innerHTML = ''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if (!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${escapeHtml(category)}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${escapeHtml(r.penalty)}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${escapeHtml(r.desc)}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
+function renderCoins() { const c = document.getElementById('coin-feed'); if (!c) return; c.innerHTML = ''; coinsData.forEach(i => c.innerHTML += `<li class="coin-item"><span>${escapeHtml(i.task)}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
 function filterCatalog(tier, btn) { currentTier = tier; document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active'); renderCatalog(); }
+
+let currentSandboxLevel = '1';
+function filterSandbox(level, btn) {
+    currentSandboxLevel = level;
+    const container = document.getElementById('sandbox-level-tabs');
+    if (container) {
+        container.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+    }
+    if (btn) btn.classList.add('active');
+    renderSandbox();
+}
+
+function renderSandbox() {
+    const c = document.getElementById('sandbox-feed'); if (!c) return; c.innerHTML = '';
+    const f = (sandboxChallengesData || []).filter(i => String(i.level) === currentSandboxLevel);
+    if (f.length === 0) c.innerHTML = '<p style="color:#666">No challenges available.</p>';
+    else f.forEach(i => {
+        const diffHtml = escapeHtml(i.difficulty);
+        const ptsHtml = formatCostDisplay(i.points);
+        const isMix = i.level === 'mix';
+        const uniqueId = isMix ? i.name : (i.level + '_' + i.number);
+        const btnHtml = `<button class="btn-req" onclick="openSandboxSubmit('${escapeJsString(uniqueId)}')">Submit Link</button>`;
+
+        c.innerHTML += `<div class="store-card"><div class="store-info"><h4 style="margin:0;">${escapeHtml(i.name)}</h4><p style="margin:5px 0; font-size:0.8rem; color:#aaa;">${diffHtml} | <span style="color:var(--coin-gold);font-weight:bold;">${i.points} Gold Coins</span></p><div style="font-size:0.8rem; color:#bbb;">${escapeHtml(i.objective || i.desc)}</div></div><div class="store-action" style="margin-top:10px;">${btnHtml}</div></div>`;
+    });
+}
 
 function renderCatalog() {
     const c = document.getElementById('catalog-feed'); if (!c) return; c.innerHTML = '';
@@ -85,13 +170,13 @@ function renderCatalog() {
     const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false);
     if (f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>';
     else f.forEach(i => {
-        let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`;
-        let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`;
+        let img = i.image && i.image.length > 5 ? `<img src="${sanitizeUrl(i.image)}">` : `<i class="fa-solid ${escapeHtml(i.icon || 'fa-cube')}"></i>`;
+        let btnText = "Request"; let btnAction = `onclick="initRequest('${escapeJsString(i.id)}')"`;
         let catBadge = ''; let specialClass = '';
         if (i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; }
         else if (i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; }
         else if (i.category === 'limited') { btnText = "Get It Now!"; catBadge = `<span class="badge-limited">LIMITED</span>`; specialClass = 'limited-card'; }
-        c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`;
+        c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${escapeHtml(i.name)} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${escapeHtml(i.desc || '')}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`;
     });
 }
 
@@ -151,7 +236,7 @@ function renderQueue() {
             borderColor = '#7f8c8d'; // Grey
         }
 
-        const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : '';
+        const detHtml = i.details ? `<span style="opacity:0.6">| ${escapeHtml(i.details)}</span>` : '';
 
         c.innerHTML += `
             <div class="${cc}" style="border-left-color: ${borderColor};">
@@ -159,11 +244,11 @@ function renderQueue() {
                     <div class="q-number">${x + 1}</div>
                     <div class="q-info">
                         <h3>${formatName(i.name)}</h3>
-                        <p>${i.item} ${detHtml}</p>
+                        <p>${escapeHtml(i.item)} ${detHtml}</p>
                     </div>
                 </div>
                 <div class="q-status ${cl}">
-                    ${s} <i class="fa-solid ${icon}"></i>
+                    ${escapeHtml(s)} <i class="fa-solid ${icon}"></i>
                 </div>
             </div>`;
     });
@@ -279,8 +364,8 @@ function renderChallenges() {
     const c = document.getElementById('challenges-feed'); if (!c) return; c.innerHTML = '';
     if (challengesData.length === 0) { c.innerHTML = '<p style="color:#666; font-size:0.9rem; padding:10px;">No active challenges.</p>'; return; }
     challengesData.forEach(item => {
-        const icon = getChallengeIcon(item.type); const duration = item.duration ? item.duration : 'Indefinite';
-        c.innerHTML += `<div class="challenge-card"><i class="fa-solid ${icon} chal-icon"></i><div class="chal-info"><h4>${item.type}</h4><p>${item.desc}</p><span class="chal-time"><i class="fa-solid fa-clock"></i> ${duration}</span></div><div class="chal-reward">${item.reward}</div></div>`;
+        const icon = getChallengeIcon(item.type); const duration = item.duration ? escapeHtml(item.duration) : 'Indefinite';
+        c.innerHTML += `<div class="challenge-card"><i class="fa-solid ${icon} chal-icon"></i><div class="chal-info"><h4>${escapeHtml(item.type)}</h4><p>${escapeHtml(item.desc)}</p><span class="chal-time"><i class="fa-solid fa-clock"></i> ${duration}</span></div><div class="chal-reward">${escapeHtml(item.reward)}</div></div>`;
     });
 }
 
@@ -294,14 +379,14 @@ function renderGames() {
         if (activeGame) {
             // Create Button HTML if link exists
             const btnHtml = activeGame.link ?
-                `<a href="${activeGame.link}" target="_blank" style="display:inline-block; margin-top:15px; padding:10px 20px; background:var(--color-games); color:black; font-weight:bold; text-decoration:none; border-radius:6px; box-shadow:0 4px 10px rgba(0,0,0,0.3); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">PLAY NOW <i class="fa-solid fa-play" style="margin-left:5px;"></i></a>`
+                `<a href="${sanitizeUrl(activeGame.link)}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin-top:15px; padding:10px 20px; background:var(--color-games); color:black; font-weight:bold; text-decoration:none; border-radius:6px; box-shadow:0 4px 10px rgba(0,0,0,0.3); transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">PLAY NOW <i class="fa-solid fa-play" style="margin-left:5px;"></i></a>`
                 : '';
 
             heroContainer.innerHTML = `
-            <div class="game-hero" style="background-image: url('${activeGame.image}');">
+            <div class="game-hero" style="background-image: url('${sanitizeUrl(activeGame.image)}');">
                 <div class="game-hero-content">
-                    <h1>${activeGame.title}</h1>
-                    <p>${activeGame.desc}</p>
+                    <h1>${escapeHtml(activeGame.title)}</h1>
+                    <p>${escapeHtml(activeGame.desc)}</p>
                     ${btnHtml}
                 </div>
             </div>`;
@@ -320,7 +405,7 @@ function renderGames() {
                 else if (rank === 3) prizeHtml = `<span class="coin-val gold">1</span>`;
                 else if (rank >= 4 && rank <= 6) prizeHtml = `<span class="coin-val silver">4</span>`;
                 else if (rank >= 7 && rank <= 10) prizeHtml = `<span class="coin-val silver">2</span>`;
-                lbContainer.innerHTML += `<div class="game-lb-row"><div class="g-rank">#${rank}</div><div class="g-name">${formatName(s.name)}</div><div class="g-score">${s.score}</div><div class="g-prize">${prizeHtml}</div></div>`;
+                lbContainer.innerHTML += `<div class="game-lb-row"><div class="g-rank">#${rank}</div><div class="g-name">${formatName(s.name)}</div><div class="g-score">${escapeHtml(String(s.score))}</div><div class="g-prize">${prizeHtml}</div></div>`;
             });
         } else { lbContainer.innerHTML = '<p style="color:#666; text-align:center; padding:20px;">No scores yet. Be the first!</p>'; }
     }
@@ -328,7 +413,7 @@ function renderGames() {
     if (historyList) {
         historyList.innerHTML = '';
         if (pastGames.length === 0) { historyList.innerHTML = '<p style="color:#666; text-align:center;">No history.</p>'; }
-        else { pastGames.forEach(g => { historyList.innerHTML += `<div class="list-card" style="margin-bottom:10px; padding:15px;"><div class="card-info"><h3 style="font-size:0.9rem;">${g.title}</h3><p style="font-size:0.7rem;">${g.month || 'Archived'}</p></div></div>`; }); }
+        else { pastGames.forEach(g => { historyList.innerHTML += `<div class="list-card" style="margin-bottom:10px; padding:15px;"><div class="card-info"><h3 style="font-size:0.9rem;">${escapeHtml(g.title)}</h3><p style="font-size:0.7rem;">${escapeHtml(g.month || 'Archived')}</p></div></div>`; }); }
     }
 }
 
@@ -347,21 +432,21 @@ function renderJams() {
         activeJams.forEach((jam, idx) => {
             const isWinnerMode = jam.status === 'revealed'; const themeColor = jam.color || '#f1c40f'; let winnerHtml = '';
             if (isWinnerMode && jam.winners && jam.winners.length > 0) {
-                winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
-                jam.winners.forEach(w => { winnerHtml += `<div class="winner-card" style="border-color:${themeColor}; cursor:pointer;" onclick="viewWinner('${w.id}', event)"><i class="fa-solid fa-gamepad" style="color:${themeColor}; font-size:1.5rem; margin-bottom:5px;"></i><span style="display:block; font-size:1rem; color:white;">${w.gameTitle}</span><span style="display:block; font-size:0.7rem; color:#aaa; font-weight:normal; margin-top:2px;">by ${formatName(w.ninjaName)}</span></div>`; });
+                winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${escapeHtml(themeColor)}; text-shadow:0 0 20px ${escapeHtml(themeColor)}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
+                jam.winners.forEach(w => { winnerHtml += `<div class="winner-card" style="border-color:${escapeHtml(themeColor)}; cursor:pointer;" onclick="viewWinner('${escapeJsString(w.id)}', event)"><i class="fa-solid fa-gamepad" style="color:${escapeHtml(themeColor)}; font-size:1.5rem; margin-bottom:5px;"></i><span style="display:block; font-size:1rem; color:white;">${escapeHtml(w.gameTitle)}</span><span style="display:block; font-size:0.7rem; color:#aaa; font-weight:normal; margin-top:2px;">by ${formatName(w.ninjaName)}</span></div>`; });
                 winnerHtml += `</div></div>`;
             }
             const activeClass = idx === carouselIndex ? 'active' : '';
-            track.innerHTML += `<div class="jam-slide ${activeClass}" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})"><div class="jam-hero-image" style="background-image: url('${jam.image || ''}');"><div class="jam-top-title" style="text-shadow: 0 0 10px ${themeColor};">${jam.title}</div></div><div class="jam-content-box"><div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); background:${themeColor}; color:black; font-weight:bold; padding:4px 12px; border-radius:20px; font-size:0.8rem; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${jam.type || 'Game Jam'} | ${jam.dates}</div><h1 class="jam-header" style="margin-top:10px;">${parseMarkdown(jam.header, themeColor)}</h1><p class="jam-desc">${jam.desc}</p><div class="jam-details" style="color:${themeColor};">${jam.details}</div></div>${winnerHtml}</div>`;
+            track.innerHTML += `<div class="jam-slide ${activeClass}" onclick="openJamSubmission('${escapeJsString(jam.id)}', ${isWinnerMode})"><div class="jam-hero-image" style="background-image: url('${sanitizeUrl(jam.image || '')}');"><div class="jam-top-title" style="text-shadow: 0 0 10px ${escapeHtml(themeColor)};">${escapeHtml(jam.title)}</div></div><div class="jam-content-box"><div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); background:${escapeHtml(themeColor)}; color:black; font-weight:bold; padding:4px 12px; border-radius:20px; font-size:0.8rem; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${escapeHtml(jam.type || 'Game Jam')} | ${escapeHtml(jam.dates)}</div><h1 class="jam-header" style="margin-top:10px;">${parseMarkdown(jam.header, themeColor)}</h1><p class="jam-desc">${escapeHtml(jam.desc)}</p><div class="jam-details" style="color:${escapeHtml(themeColor)};">${escapeHtml(jam.details)}</div></div>${winnerHtml}</div>`;
         });
     }
     if (pastJams.length === 0) { pastGrid.innerHTML = '<p style="color:#666; grid-column:span 2; text-align:center;">No history yet.</p>'; }
     else {
         pastJams.forEach(jam => {
             let topWinnerName = "View Winners"; let winnerAction = "";
-            if (jam.winners && jam.winners.length > 0) { topWinnerName = jam.winners[0].gameTitle; winnerAction = `onclick="viewWinner('${jam.winners[0].id}', event)"`; }
+            if (jam.winners && jam.winners.length > 0) { topWinnerName = jam.winners[0].gameTitle; winnerAction = `onclick="viewWinner('${escapeJsString(jam.winners[0].id)}', event)"`; }
             const themeColor = jam.color || '#f1c40f';
-            pastGrid.innerHTML += `<div class="past-jam-card" ${winnerAction}><div class="pj-img" style="background-image:url('${jam.image}');"></div><div class="pj-info"><h4>${jam.title}</h4><p>Winner: <span style="color:${themeColor}; font-weight:bold;">${topWinnerName}</span></p></div></div>`;
+            pastGrid.innerHTML += `<div class="past-jam-card" ${winnerAction}><div class="pj-img" style="background-image:url('${sanitizeUrl(jam.image)}');"></div><div class="pj-info"><h4>${escapeHtml(jam.title)}</h4><p>Winner: <span style="color:${escapeHtml(themeColor)}; font-weight:bold;">${escapeHtml(topWinnerName)}</span></p></div></div>`;
         });
     }
 }
@@ -379,7 +464,8 @@ function viewWinner(submissionId, event) {
     document.getElementById('win-game-title').style.color = color;
     document.getElementById('win-ninja').innerText = `Created by ${formatName(sub.ninjaName)}`;
     const linkBtn = document.getElementById('win-link');
-    linkBtn.href = sub.link;
+    linkBtn.href = sanitizeUrl(sub.link);
+    linkBtn.setAttribute('rel', 'noopener noreferrer');
     linkBtn.style.background = color;
     linkBtn.style.color = (color === '#ffffff' || color === '#f1c40f') ? 'black' : 'white';
     document.getElementById('winner-modal').style.display = 'flex';

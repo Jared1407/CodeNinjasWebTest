@@ -1,8 +1,9 @@
-// api/[collection]/deleteWhere.js - Bulk delete with filter
+// api/[collection]/deleteWhere.js - Bulk delete with filter (authenticated)
 import connectDB from '../../lib/mongodb.js';
 import { getCollectionModel } from '../../lib/models/Collection.js';
+import { requireAuth } from '../../lib/requireAuth.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {
@@ -22,6 +23,17 @@ export default async function handler(req, res) {
 
     if (!filter || !filter.field) {
         return res.status(400).json({ error: 'Filter with field required' });
+    }
+
+    // Whitelist allowed filter fields to prevent abuse
+    const allowedFilterFields = ['points', 'status', 'belt', 'createdAt'];
+    if (!allowedFilterFields.includes(filter.field)) {
+        return res.status(400).json({ error: `Filter field '${filter.field}' is not allowed. Allowed: ${allowedFilterFields.join(', ')}` });
+    }
+
+    // Prevent MongoDB operator injection (value must be a primitive)
+    if (filter.value !== null && typeof filter.value === 'object') {
+        return res.status(400).json({ error: 'Filter value must be a primitive type' });
     }
 
     try {
@@ -40,3 +52,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'Database operation failed' });
     }
 }
+
+// Wrap with authentication
+export default requireAuth(handler);

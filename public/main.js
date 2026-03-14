@@ -17,6 +17,8 @@ let catalogData = [];
 let requestsData = [];
 let queueData = [];
 let leaderboardData = [];
+let sandboxSubmissionsData = [];
+let sandboxChallengesData = [];
 let filamentData = DEFAULT_FILAMENTS; // from config.js
 
 let currentTier = 'tier1';
@@ -105,24 +107,55 @@ function showConfirm(msg, callback, type = 'danger') {
     };
 
     modal.style.display = 'flex';
-} function handleLogoClick() { if (window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if (clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
-function toggleAdminViewMode() { const adminView = document.getElementById('admin-view'); const floatingBtn = document.getElementById('floating-admin-toggle'); if (adminView.classList.contains('active')) { adminView.classList.remove('active'); floatingBtn.style.display = 'flex'; } else { adminView.classList.add('active'); floatingBtn.style.display = 'flex'; } }
+}
+function handleLogoClick() {
+    if (window.innerWidth < 768) return; clickCount++;
+    clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+    if (clickCount === 3) { clickCount = 0; toggleAdminLogin(); }
+}
+function toggleAdminViewMode() {
+    const adminView = document.getElementById('admin-view');
+    const floatingBtn = document.getElementById('floating-admin-toggle');
+    if (adminView.classList.contains('active')) {
+        adminView.classList.remove('active');
+        floatingBtn.style.display = 'flex';
+    } else {
+        adminView.classList.add('active');
+        floatingBtn.style.display = 'flex';
+    }
+}
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
+
+/* ================= LOADING OVERLAY ================= */
+function showLoading(message = 'Loading...') {
+    const overlay = document.getElementById('loading-overlay');
+    const text = overlay?.querySelector('.loading-text');
+    if (text) text.textContent = message;
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
 
 /* ================= DATA LOADING ================= */
 async function subscribeToData() {
-    // Load all data from server
-    await initializeDatabase();
+    showLoading('Loading data...');
+    try {
+        // Load all data from server
+        await initializeDatabase();
 
-    // Load into local variables
-    loadAllData();
+        // Load into local variables
+        loadAllData();
 
-    // Initialize with defaults if empty
-    initializeDefaultData();
+        // Initialize with defaults if empty (adds to cache)
+        initializeDefaultData();
 
-    // Re-load after defaults added
-    loadAllData();
-    refreshAll();
+        refreshAll();
+    } finally {
+        hideLoading();
+    }
 }
 
 function loadAllData() {
@@ -150,6 +183,13 @@ function loadAllData() {
     jamSubmissions = DB.jamSubmissions.getAll();
     gamesData = DB.games.getAll();
     challengesData = DB.challenges.getAll();
+    sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+    if (sandboxChallengesData.length === 0 && typeof SANDBOX_CHALLENGES !== 'undefined') {
+        DB.sandboxChallenges.setAll(SANDBOX_CHALLENGES);
+        sandboxChallengesData = DB.sandboxChallenges.getAll();
+    }
 
     // Load filament settings
     const filamentSettings = DB.settings.get('filaments');
@@ -157,6 +197,23 @@ function loadAllData() {
         filamentData = filamentSettings.colors;
     }
 }
+
+// Called by database.js when secondary data finishes loading
+window.onDeferredDataLoaded = () => {
+    requestsData = DB.requests.getAll();
+    queueData = DB.queue.getAll();
+    jamsData = DB.jams.getAll();
+    jamSubmissions = DB.jamSubmissions.getAll();
+    gamesData = DB.games.getAll();
+    challengesData = DB.challenges.getAll();
+    sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+
+    // Refresh admin lists if user is admin
+    if (currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei')) {
+        if (typeof renderAdminLists === 'function') renderAdminLists();
+    }
+};
 
 function loadCatalog() {
     catalogData = DB.catalog.getAll();
@@ -183,9 +240,45 @@ function loadLeaderboard() {
 function loadJams() { jamsData = DB.jams.getAll(); renderJams(); }
 function loadGames() { gamesData = DB.games.getAll(); renderGames(); }
 
+function loadSandbox() {
+    if (typeof renderSandbox === 'function') renderSandbox();
+    if (currentUser?.isAdmin) {
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        if (typeof renderAdminSandbox === 'function') renderAdminSandbox();
+    }
+}
+
 function refreshAll() {
     renderNews(); renderJams(); renderGames(); renderRules(); renderCoins();
     renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists();
+    if (typeof renderSandbox === 'function') renderSandbox();
+}
+
+// Update ninja's points display in header
+function updateNinjaPointsDisplay() {
+    const display = document.getElementById('ninja-points-display');
+    const valueEl = document.getElementById('ninja-points-value');
+    if (!display || !valueEl) return;
+
+    // Only show for regular ninjas, not staff
+    const isStaff = currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei');
+    if (isStaff) {
+        display.style.display = 'none';
+        return;
+    }
+
+    // Find ninja in leaderboard by username or name
+    const ninja = leaderboardData.find(n =>
+        (n.username && currentUser.username && n.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+        (n.name && currentUser.name && n.name.toLowerCase() === currentUser.name.toLowerCase())
+    );
+
+    if (ninja) {
+        valueEl.textContent = ninja.points || 0;
+        display.style.display = 'block';
+    } else {
+        display.style.display = 'none';
+    }
 }
 
 /* ================= STARTUP ================= */
@@ -203,13 +296,32 @@ window.onload = async function () {
 
     const savedUser = localStorage.getItem('cn_user');
     if (savedUser) {
-        try { currentUser = JSON.parse(savedUser); enterDashboard(); }
+        try {
+            currentUser = JSON.parse(savedUser);
+
+            // Validate JWT token is present and not obviously expired
+            const token = localStorage.getItem('cn_auth_token');
+            const isStaff = currentUser.isAdmin || currentUser.role === 'admin' || currentUser.role === 'sensei';
+            if (isStaff && !token) {
+                // Admin/sensei without token - force re-login
+                console.warn('Staff session without JWT token, requiring re-login');
+                localStorage.removeItem('cn_user');
+                currentUser = null;
+                document.getElementById('login-view').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+                return;
+            }
+
+            // Only load data after user is authenticated
+            await subscribeToData();
+            enterDashboard();
+        }
         catch (e) { console.error("Error parsing user", e); localStorage.removeItem('cn_user'); }
     } else {
         document.getElementById('login-view').style.display = 'flex';
         document.getElementById('main-app').style.display = 'none';
+        // Don't load data - user needs to login first
     }
-    await subscribeToData();
 };
 
 /* ================= REQUEST MODAL LOGIC ================= */
@@ -246,7 +358,7 @@ function initRequest(id) {
     }
 
     if (mainImg) {
-        imgContainer.innerHTML = `<img src="${mainImg}" style="width:100%; height:100%; object-fit:contain;">`;
+        imgContainer.innerHTML = `<img src="${sanitizeUrl(mainImg)}" style="width:100%; height:100%; object-fit:contain;">`;
     } else {
         imgContainer.innerHTML = `<i class="fa-solid fa-cube" style="font-size:4rem; color:#333;"></i>`;
     }
@@ -255,7 +367,7 @@ function initRequest(id) {
     let colorOptionsHtml = '<option value="Default/No Preference">-- Select a Color (Optional) --</option>';
     if (typeof filamentData !== 'undefined' && Array.isArray(filamentData)) {
         filamentData.forEach(c => {
-            colorOptionsHtml += `<option value="${c}">${c}</option>`;
+            colorOptionsHtml += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
         });
     }
 
@@ -315,11 +427,11 @@ function initRequest(id) {
         if (item.variations && item.variations.length > 0) {
             item.variations.forEach((v, idx) => {
                 const active = idx === 0 ? 'active' : '';
-                gallery.innerHTML += `<div class="req-thumb ${active}" onclick="selectVariant(${idx}, '${v.image}')"><img src="${v.image}"></div>`;
+                gallery.innerHTML += `<div class="req-thumb ${active}" onclick="selectVariant(${idx}, '${sanitizeUrl(v.image)}')"><img src="${sanitizeUrl(v.image)}"></div>`;
             });
-            dynFields.innerHTML += `<p id="selected-variant-name" style="color:var(--color-catalog); text-align:center; font-weight:bold; margin-bottom:15px;">Selected: ${item.variations[0].name}</p>`;
+            dynFields.innerHTML += `<p id="selected-variant-name" style="color:var(--color-catalog); text-align:center; font-weight:bold; margin-bottom:15px;">Selected: ${escapeHtml(item.variations[0].name)}</p>`;
         } else {
-            dynFields.innerHTML += `<p style="color:#aaa; margin-bottom:15px;">Standard ${item.name}</p>`;
+            dynFields.innerHTML += `<p style="color:#aaa; margin-bottom:15px;">Standard ${escapeHtml(item.name)}</p>`;
         }
 
         // Color Selector for Premium
@@ -440,10 +552,11 @@ function submitRequest() {
 function selectVariant(idx, imgUrl) {
     selectedVariantIdx = idx;
 
-    // Update main image
+    // Update main image (re-sanitize)
     const imgContainer = document.getElementById('req-img-container');
     if (imgUrl) {
-        imgContainer.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain;">`;
+        const safeUrl = sanitizeUrl(imgUrl);
+        imgContainer.innerHTML = `<img src="${safeUrl}" style="width:100%; height:100%; object-fit:contain;">`;
     }
 
     // Update thumbnails UI
@@ -462,4 +575,43 @@ function selectVariant(idx, imgUrl) {
 
 function closeReqModal() {
     document.getElementById('req-modal').style.display = 'none';
+}
+
+function openSandboxSubmit(challengeId) {
+    if (!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
+    const chal = sandboxChallengesData.find(c => c.name === challengeId || (c.level + '_' + c.number) === challengeId);
+    if (!chal) return;
+    document.getElementById('sandbox-modal-title').innerText = chal.name;
+    document.getElementById('sandbox-modal-desc').innerText = chal.difficulty + " - " + (chal.objective || chal.desc);
+    document.getElementById('sandbox-submit-id').value = chal.level + '_' + chal.number + '_' + chal.name;
+    document.getElementById('sandbox-submit-points').value = chal.points;
+    document.getElementById('sandbox-submit-link').value = '';
+    document.getElementById('sandbox-submit-modal').style.display = 'flex';
+}
+
+function confirmSandboxSubmission() {
+    const link = document.getElementById('sandbox-submit-link').value.trim();
+    if (!link) { showAlert("Missing Link", "Please provide a link to your project."); return; }
+    if (!currentUser) { showAlert("Not Logged In", "Please log in to submit."); return; }
+
+    const chalName = document.getElementById('sandbox-modal-title').innerText;
+    const chalId = document.getElementById('sandbox-submit-id').value;
+    const points = parseInt(document.getElementById('sandbox-submit-points').value) || 0;
+
+    const sub = {
+        ninjaId: currentUser.id,
+        ninjaName: currentUser.name,
+        challengeId: chalId,
+        challengeName: chalName,
+        link: link,
+        pointsPossible: points,
+        status: "Pending",
+        submittedAt: Date.now()
+    };
+
+    DB.sandboxSubmissions.add(sub);
+    sandboxSubmissionsData.push(sub);
+
+    document.getElementById('sandbox-submit-modal').style.display = 'none';
+    showAlert("Submitted!", "Your project has been sent to Sensei for review.");
 }

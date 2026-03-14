@@ -2,8 +2,9 @@
 import connectDB from '../../../lib/mongodb.js';
 import Sensei from '../../../lib/models/Sensei.js';
 import bcrypt from 'bcryptjs';
+import { requireAuth } from '../../../lib/requireAuth.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'DELETE') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -46,3 +47,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'Failed to delete sensei' });
     }
 }
+
+// Require admin authentication
+export default requireAuth(handler, { adminOnly: true });

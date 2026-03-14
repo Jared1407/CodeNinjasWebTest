@@ -1,6 +1,8 @@
-// api/[collection]/index.js - Collection CRUD operations (list, create, replace all)
+// api/[collection]/index.js - Collection CRUD operations
+// GET is public, mutations require authentication
 import connectDB from '../../lib/mongodb.js';
 import { getCollectionModel } from '../../lib/models/Collection.js';
+import { verifyToken, extractToken } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
     const { collection } = req.query;
@@ -8,7 +10,7 @@ export default async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {
@@ -19,19 +21,36 @@ export default async function handler(req, res) {
         await connectDB();
         const Model = getCollectionModel(collection);
 
-        // GET - List all items in collection
+        // GET - List all items in collection (PUBLIC - no auth required)
         if (req.method === 'GET') {
-            const items = await Model.find({});
-            // Transform _id to id for frontend compatibility
-            const result = items.map(item => {
-                const obj = item.toObject();
-                return obj;
-            });
-            return res.json(result);
+            const items = await Model.find({}).lean();
+            return res.json(items);
+        }
+
+        // For mutations (POST, PUT, DELETE), require authentication
+        // Exception: Ninjas can submit to these collections without a token
+        const publicPostCollections = ['requests', 'jamSubmissions', 'sandboxSubmissions'];
+        const isPublicPost = req.method === 'POST' && publicPostCollections.includes(collection);
+
+        let user = null;
+        if (req.method !== 'GET' && !isPublicPost) {
+            const token = extractToken(req.headers.authorization);
+            if (!token) {
+                return res.status(401).json({ error: `Authentication required for ${req.method} on ${collection}` });
+            }
+            user = await verifyToken(token);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
+            }
         }
 
         // POST - Add new item
         if (req.method === 'POST') {
+            // Reject excessively large payloads (50KB limit)
+            const bodySize = JSON.stringify(req.body).length;
+            if (bodySize > 50000) {
+                return res.status(413).json({ error: 'Request body too large' });
+            }
             const id = `${collection}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const newItem = await Model.create({
                 id: id,
@@ -41,8 +60,11 @@ export default async function handler(req, res) {
             return res.json(newItem.toObject());
         }
 
-        // PUT - Replace entire collection
+        // PUT - Replace entire collection (ADMIN ONLY)
         if (req.method === 'PUT') {
+            if (!user || (!user.isAdmin && user.role !== 'admin')) {
+                return res.status(403).json({ error: 'Admin access required for collection replacement' });
+            }
             // Delete all existing items
             await Model.deleteMany({});
 

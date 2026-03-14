@@ -13,6 +13,7 @@ function renderAdminLists() {
     renderAdminJamsList();
     renderAdminGames();
     renderAdminChallenges();
+    renderAdminSandbox();
 }
 
 /* === NEWS, RULES, COINS === */
@@ -20,7 +21,7 @@ function renderAdminNews() {
     const nList = document.getElementById('admin-news-list');
     if (nList) {
         nList.innerHTML = '';
-        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`);
+        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${escapeHtml(n.title)}</h3><p>${escapeHtml(n.date)}</p></div><div class="status-badge" style="color:var(--color-games)">${escapeHtml(n.badge)} ></div></div><button onclick="openNewsModal('${escapeJsString(n.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${escapeJsString(n.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`);
     }
 }
 function openNewsModal(id = null) {
@@ -71,8 +72,8 @@ function renderAdminRules() {
     if (rList) {
         rList.innerHTML = '';
         rulesData.forEach(r => {
-            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : '';
-            rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${escapeHtml(r.penalty)}</div>` : '';
+            rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.desc)}</p></div>${b}</div><button onclick="openRulesModal('${escapeJsString(r.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${escapeJsString(r.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
         }
         );
     }
@@ -131,7 +132,7 @@ function renderAdminCoins() {
         coinsData.forEach((c, index) => {
             const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>';
             const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>';
-            cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+            cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${escapeHtml(c.task)}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
         }
         );
     }
@@ -203,10 +204,10 @@ function renderAdminCatalog() {
         catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`;
         let g = `<div class="admin-store-grid">`;
         catalogData.filter(i => i.tier === t).forEach(i => {
-            let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`;
+            let img = i.image && i.image.length > 5 ? `<img src="${sanitizeUrl(i.image)}">` : `<i class="fa-solid ${escapeHtml(i.icon)}"></i>`;
             let h = i.visible === false ? 'hidden' : '';
             let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : (i.category === 'limited' ? 'LIMITED' : 'STD'));
-            g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`;
+            g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${escapeHtml(i.name)}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${escapeHtml(String(i.cost))} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${escapeJsString(i.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${escapeJsString(i.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`;
         }
         );
         g += `</div>`;
@@ -348,10 +349,10 @@ function renderAdminInterest() {
     } else {
         st.sort((a, b) => b.interest - a.interest);
         st.forEach(s => {
-            let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`;
+            let img = s.image && s.image.length > 5 ? `<img src="${sanitizeUrl(s.image)}">` : `<i class="fa-solid ${escapeHtml(s.icon)}"></i>`;
             let extraClass = s.category === 'limited' ? 'style="border:1px solid #e74c3c;"' : '';
             let namePrefix = s.category === 'limited' ? '<span style="color:#e74c3c;font-size:0.7rem;">[LTD]</span> ' : '';
-            intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`;
+            intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${escapeHtml(s.name)}</h4><div class="interest-count-badge">${escapeHtml(String(s.interest))} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${escapeJsString(s.id)}')">RESET</button></div></div>`;
         }
         );
     }
@@ -369,7 +370,7 @@ function renderAdminRequests() {
         return;
     }
     pending.forEach(r => {
-        c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`;
+        c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${escapeHtml(r.name)}</div><div style="color:var(--color-catalog); font-weight:600;">${escapeHtml(r.item)}</div><div style="color:#888; font-size:0.75rem;">${escapeHtml(r.details)}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${escapeJsString(r.id)}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${escapeJsString(r.id)}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`;
     }
     );
 }
@@ -393,7 +394,7 @@ function renderAdminQueue() {
 
     activeQ.forEach(q => {
         const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`;
-        const detHtml = q.details ? `| ${q.details}` : '';
+        const detHtml = q.details ? `| ${escapeHtml(q.details)}` : '';
 
         // Determine Color
         let colorCode = '#444';
@@ -417,11 +418,11 @@ function renderAdminQueue() {
         qList.innerHTML += `
             <div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e; border-left: 4px solid ${colorCode};">
                 <div style="display:flex; justify-content:space-between;">
-                    <strong>${q.name}</strong> 
-                    <span class="status-badge" style="color:white; background:${colorCode};">${q.status}</span>
+                    <strong>${escapeHtml(q.name)}</strong> 
+                    <span class="status-badge" style="color:white; background:${colorCode};">${escapeHtml(q.status)}</span>
                 </div>
                 <div style="color:#aaa; font-size:0.8rem;">
-                    ${q.item} ${detHtml}
+                    ${escapeHtml(q.item)} ${detHtml}
                 </div>
                 <div style="margin-top:5px; display:flex; gap:5px;">
                     <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#555;">Pend</button>
@@ -455,8 +456,8 @@ function renderQueueHistory() {
         h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>';
     else
         p.forEach(q => {
-            const detHtml = q.details ? ` - ${q.details}` : '';
-            h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`;
+            const detHtml = q.details ? ` - ${escapeHtml(q.details)}` : '';
+            h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${escapeHtml(q.name)}</strong> - ${escapeHtml(q.item)} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`;
         }
         );
 }
@@ -506,6 +507,8 @@ function selectNinjaToEdit(id) {
     document.getElementById('admin-lb-obsidian').value = '';
     document.getElementById('admin-lb-gold').value = '';
     document.getElementById('admin-lb-silver').value = '';
+    document.getElementById('admin-note-text').value = '';
+    renderNinjaNotesAdmin(n);
 }
 function adminUpdatePoints() {
     if (!editingNinjaId)
@@ -658,7 +661,7 @@ function renderAdminJamsList() {
     c.innerHTML = '';
     jamsData.forEach(j => {
         const color = j.color || '#2ecc71';
-        c.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" onclick="openAdminJamModal('${j.id}')" style="margin:0; border-left-color:${color}; cursor:pointer; flex-grow:1;"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div><button onclick="deleteJam('${j.id}')" class="btn-mini" style="background:#e74c3c; margin-left:10px;">Del</button></div>`;
+        c.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" onclick="openAdminJamModal('${escapeJsString(j.id)}')" style="margin:0; border-left-color:${escapeHtml(color)}; cursor:pointer; flex-grow:1;"><div class="card-info"><h3>${escapeHtml(j.title)}</h3><p>${escapeHtml(j.dates)}</p></div><div class="status-badge" style="color:${escapeHtml(color)}">${escapeHtml(j.status || 'Active')}</div></div><button onclick="deleteJam('${escapeJsString(j.id)}')" class="btn-mini" style="background:#e74c3c; margin-left:10px;">Del</button></div>`;
     }
     );
 }
@@ -733,7 +736,7 @@ function renderJamSubmissionsList(jamId, currentWinners) {
     subs.forEach(s => {
         const isWinner = currentWinners.some(w => w.id === s.id);
         const check = isWinner ? 'checked' : '';
-        list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`;
+        list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${escapeHtml(s.id)}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${escapeHtml(s.ninjaName)}</div><div style="color:#888; font-size:0.7rem;">${escapeHtml(s.gameTitle)}</div></div><a href="${sanitizeUrl(s.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`;
     }
     );
 }
@@ -766,7 +769,7 @@ function renderAdminChallenges() {
     }
     challengesData.forEach(c => {
         const icon = getChallengeIcon(c.type);
-        list.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" style="margin:0; border-left: 4px solid #3498db;"><div class="card-info"><h3><i class="fa-solid ${icon}"></i> ${c.type}</h3><p>${c.desc} (${c.reward})</p></div></div><button onclick="openChallengeModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteChallenge('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
+        list.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" style="margin:0; border-left: 4px solid #3498db;"><div class="card-info"><h3><i class="fa-solid ${icon}"></i> ${escapeHtml(c.type)}</h3><p>${escapeHtml(c.desc)} (${escapeHtml(c.reward)})</p></div></div><button onclick="openChallengeModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteChallenge('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`;
     }
     );
 }
@@ -873,54 +876,173 @@ function saveActiveGame() {
 function renderAdminGameScores(game) {
     const list = document.getElementById('admin-game-scores-list');
     list.innerHTML = '';
-    if (!game.scores || game.scores.length === 0)
+    if (!game.scores || game.scores.length === 0) {
+        list.innerHTML = '<p style="color:#666;">No scores yet. Search for ninjas above to add them.</p>';
         return;
-    game.scores.sort((a, b) => b.score - a.score).forEach((s, idx) => {
-        list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; margin-bottom:5px; border-radius:4px;"><span>${idx + 1}. ${s.name} - <strong>${s.score}</strong></span><button onclick="deleteGameScore('${s.name}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;">X</button></div>`;
     }
-    );
+    const medals = ['🥇', '🥈', '🥉', '4.', '5.'];
+    game.scores.sort((a, b) => b.score - a.score).forEach((s, idx) => {
+        const medal = idx < 5 ? medals[idx] : `${idx + 1}.`;
+        const deleteId = s.ninjaId || s.name; // Support both old and new format
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:10px; margin-bottom:5px; border-radius:4px;">
+            <span>${medal} ${escapeHtml(s.name)} - <strong>${s.score}</strong></span>
+            <button onclick="deleteGameScore('${deleteId}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer; padding:4px 8px;">✕</button>
+        </div>`;
+    });
 }
+
+/* === NINJA SEARCH FOR GAME SCORES === */
+function searchNinjaForGame() {
+    const search = document.getElementById('ag-ninja-search').value.toLowerCase().trim();
+    const resultsDiv = document.getElementById('ag-ninja-results');
+
+    if (search.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+
+    // Filter leaderboard for matching ninjas
+    const matches = leaderboardData.filter(n =>
+        (n.name && n.name.toLowerCase().includes(search)) ||
+        (n.username && n.username.toLowerCase().includes(search))
+    ).slice(0, 8); // Limit to 8 results
+
+    if (matches.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding:10px; color:#666;">No ninjas found</div>';
+        resultsDiv.style.display = 'block';
+        return;
+    }
+
+    resultsDiv.innerHTML = matches.map(n => `
+        <div onclick="selectNinjaForScore('${n.id}', '${escapeHtml(n.name)}')" 
+             style="padding:10px; cursor:pointer; border-bottom:1px solid #222; color:#fff;"
+             onmouseover="this.style.background='#222'" onmouseout="this.style.background='transparent'">
+            ${escapeHtml(n.name)} ${n.username ? '<span style="color:#666;">@' + escapeHtml(n.username) + '</span>' : ''}
+        </div>
+    `).join('');
+    resultsDiv.style.display = 'block';
+}
+
+function selectNinjaForScore(ninjaId, name) {
+    document.getElementById('ag-selected-ninja-id').value = ninjaId;
+    document.getElementById('ag-score-name').value = name;
+    document.getElementById('ag-ninja-search').value = '';
+    document.getElementById('ag-ninja-results').style.display = 'none';
+    document.getElementById('ag-score-val').focus();
+}
+
 function addGameScore() {
+    const ninjaId = document.getElementById('ag-selected-ninja-id').value;
     const name = document.getElementById('ag-score-name').value;
     const score = parseInt(document.getElementById('ag-score-val').value);
-    if (!name || isNaN(score))
-        return;
+
+    if (!ninjaId || !name) {
+        return showAlert("Error", "Please select a ninja from the search.");
+    }
+    if (isNaN(score)) {
+        return showAlert("Error", "Please enter a valid score.");
+    }
+
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return showAlert("Error", "Create a game first.");
+
     const newScores = activeGame.scores || [];
-    const filtered = newScores.filter(s => s.name !== name);
+    // Remove existing entry for same ninja (by ID)
+    const filtered = newScores.filter(s => s.ninjaId !== ninjaId);
     filtered.push({
+        ninjaId,
         name,
         score
     });
+
     DB.games.update(activeGame.id, { scores: filtered });
     gamesData = DB.games.getAll();
     renderGames();
     renderAdminGames();
+
+    // Clear inputs
+    document.getElementById('ag-selected-ninja-id').value = '';
     document.getElementById('ag-score-name').value = '';
     document.getElementById('ag-score-val').value = '';
 }
-function deleteGameScore(name) {
+
+function deleteGameScore(idOrName) {
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return;
-    const newScores = activeGame.scores.filter(s => s.name !== name);
+    // Support both old (name) and new (ninjaId) formats
+    const newScores = activeGame.scores.filter(s =>
+        s.ninjaId !== idOrName && s.name !== idOrName
+    );
     DB.games.update(activeGame.id, { scores: newScores });
     gamesData = DB.games.getAll();
     renderGames();
     renderAdminGames();
 }
+
 function archiveActiveGame() {
     const activeGame = gamesData.find(g => g.status === 'active');
     if (!activeGame)
         return;
-    showConfirm("Archive this game? It will move to history.", () => {
-        DB.games.update(activeGame.id, { status: 'archived' });
-        gamesData = DB.games.getAll();
-        renderGames();
-        renderAdminGames();
-    });
+
+    // Get point values from inputs
+    const points = [
+        parseInt(document.getElementById('ag-pts-1').value) || 15,
+        parseInt(document.getElementById('ag-pts-2').value) || 10,
+        parseInt(document.getElementById('ag-pts-3').value) || 5,
+        parseInt(document.getElementById('ag-pts-4').value) || 3,
+        parseInt(document.getElementById('ag-pts-5').value) || 2
+    ];
+
+    // Sort scores and get top 5
+    const sortedScores = (activeGame.scores || []).sort((a, b) => b.score - a.score);
+    const top5 = sortedScores.slice(0, 5);
+
+    // Build confirmation message
+    let awardMsg = "End this game and award points?\n\n";
+    if (top5.length > 0) {
+        awardMsg += "Points to award:\n";
+        top5.forEach((s, i) => {
+            awardMsg += `${i + 1}. ${s.name}: +${points[i]} pts\n`;
+        });
+    } else {
+        awardMsg += "No scores recorded - no points will be awarded.";
+    }
+
+    showConfirm(awardMsg, async () => {
+        showLoading('Awarding points...');
+        try {
+            // Award points to top 5
+            for (let i = 0; i < top5.length; i++) {
+                const score = top5[i];
+                const ninja = leaderboardData.find(n => n.id === score.ninjaId);
+                if (ninja) {
+                    const newPoints = (ninja.points || 0) + points[i];
+                    await DB.leaderboard.update(ninja.id, { points: newPoints });
+                }
+            }
+
+            // Archive the game with winner info
+            await DB.games.update(activeGame.id, {
+                status: 'archived',
+                awardedPoints: points,
+                winners: top5.map((s, i) => ({ ...s, pointsAwarded: points[i] }))
+            });
+
+            // Reload data
+            leaderboardData = await DB.leaderboard.getAllAsync();
+            gamesData = DB.games.getAll();
+
+            renderGames();
+            renderAdminGames();
+            renderLeaderboard();
+
+            showAlert("Success", `Game ended! ${top5.length} ninja${top5.length !== 1 ? 's' : ''} awarded points.`);
+        } finally {
+            hideLoading();
+        }
+    }, 'success');
 }
 
 /* === SYSTEM === */
@@ -1072,4 +1194,252 @@ function resetInterest(id) {
     DB.catalog.update(id, { interest: 0 });
     catalogData = DB.catalog.getAll();
     renderAdminInterest();
+}
+
+/* === NINJA NOTES === */
+function renderNinjaNotesAdmin(ninja) {
+    const list = document.getElementById('admin-ninja-notes-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const notes = ninja.notes || [];
+    if (notes.length === 0) {
+        list.innerHTML = '<p style="color:#666; font-size:0.8rem; margin:0;">No notes for this ninja.</p>';
+        return;
+    }
+    notes.forEach(note => {
+        const date = new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        list.innerHTML += `
+        <div class="admin-note-item">
+            <div style="flex:1;">
+                <div style="color:white; font-size:0.85rem;">${escapeHtml(note.text)}</div>
+                <div style="color:#888; font-size:0.7rem; margin-top:3px;">\u2014 ${escapeHtml(note.author)} \u00b7 ${date}</div>
+            </div>
+            <button onclick="deleteNinjaNote('${note.id}')" class="btn-mini" style="background:#e74c3c; flex-shrink:0;">\u2715</button>
+        </div>`;
+    });
+}
+
+function addNinjaNote() {
+    if (!editingNinjaId) return;
+    const text = document.getElementById('admin-note-text').value.trim();
+    if (!text) return showAlert('Error', 'Please write a note first.');
+    const ninja = leaderboardData.find(x => x.id === editingNinjaId);
+    if (!ninja) return;
+    const notes = ninja.notes || [];
+    const authorName = (currentUser && currentUser.name) ? currentUser.name : 'Sensei';
+    notes.push({
+        id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        text: text,
+        author: authorName,
+        createdAt: Date.now()
+    });
+    DB.leaderboard.update(editingNinjaId, { notes: notes });
+    leaderboardData = DB.leaderboard.getAll();
+    document.getElementById('admin-note-text').value = '';
+    renderNinjaNotesAdmin(leaderboardData.find(x => x.id === editingNinjaId));
+    showAlert('Note Added', `Note saved for ${formatName(ninja.name)}.`);
+}
+
+function deleteNinjaNote(noteId) {
+    if (!editingNinjaId) return;
+    const ninja = leaderboardData.find(x => x.id === editingNinjaId);
+    if (!ninja) return;
+    const notes = (ninja.notes || []).filter(n => n.id !== noteId);
+    DB.leaderboard.update(editingNinjaId, { notes: notes });
+    leaderboardData = DB.leaderboard.getAll();
+    renderNinjaNotesAdmin(leaderboardData.find(x => x.id === editingNinjaId));
+}
+
+/* === SANDBOX SUBMISSIONS === */
+function renderAdminSandbox() {
+    // 1. Render Challenges Manager List
+    renderAdminSandboxChallenges();
+
+    // 2. Render Pending Submissions List
+    const list = document.getElementById('admin-sandbox-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Show only Pending submissions
+    const pending = sandboxSubmissionsData.filter(s => s.status === 'Pending');
+    if (pending.length === 0) {
+        list.innerHTML = '<p style="color:#666; padding:10px;">No pending sandbox submissions.</p>';
+        return;
+    }
+
+    pending.forEach(s => {
+        const date = new Date(s.submittedAt).toLocaleDateString();
+        list.innerHTML += `<div class="req-item">
+            <div style="flex:1;">
+                <div style="color:white; font-weight:bold;">${escapeHtml(s.ninjaName)}</div>
+                <div style="color:var(--color-games); font-weight:600;">${escapeHtml(s.challengeName)}</div>
+                <div style="color:#888; font-size:0.8rem; margin-top:2px;">
+                    <a href="${sanitizeUrl(s.link)}" target="_blank" style="color:#3498db; text-decoration:none;">View Project Link <i class="fa-solid fa-external-link-alt"></i></a>
+                </div>
+                <div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${date}</div>
+            </div>
+            <div class="req-actions">
+                <button onclick="approveSandboxSubmission('${escapeJsString(s.id)}')"\n                    style="background:#2ecc71; color:black; font-weight:bold;">APPROVE (+${s.pointsPossible})</button>
+                <button onclick="denySandboxSubmission('${escapeJsString(s.id)}')"\n                    style="background:#e74c3c; color:white; font-weight:bold;">DENY</button>
+            </div>
+        </div>`;
+    });
+}
+
+function approveSandboxSubmission(id) {
+    const sub = sandboxSubmissionsData.find(s => s.id === id);
+    if (!sub) return;
+
+    showConfirm(`Approve project for ${sub.ninjaName} and award ${sub.pointsPossible} points?`, () => {
+        // Update submission status
+        DB.sandboxSubmissions.update(id, {
+            status: 'Approved',
+            reviewedAt: Date.now()
+        });
+
+        // Award points to Ninja
+        const ninja = leaderboardData.find(n => n.id === sub.ninjaId);
+        if (ninja) {
+            const newPoints = (ninja.points || 0) + (sub.pointsPossible || 0);
+            DB.leaderboard.update(ninja.id, { points: newPoints });
+            showAlert("Approved!", `Awarded ${sub.pointsPossible} points to ${ninja.name}.`);
+        } else {
+            showAlert("Warning", "Submission approved, but Ninja was not found to award points.");
+        }
+
+        // Refresh Data
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        leaderboardData = DB.leaderboard.getAll();
+        renderAdminSandbox();
+        renderLeaderboard();
+        renderAdminLbPreview();
+    }, 'success');
+}
+
+function denySandboxSubmission(id) {
+    const sub = sandboxSubmissionsData.find(s => s.id === id);
+    if (!sub) return;
+
+    showConfirm(`Deny project submission from ${sub.ninjaName}? No points will be awarded.`, () => {
+        // Update submission status
+        DB.sandboxSubmissions.update(id, {
+            status: 'Denied',
+            reviewedAt: Date.now()
+        });
+
+        sandboxSubmissionsData = DB.sandboxSubmissions.getAll();
+        renderAdminSandbox();
+        showAlert("Denied", "Submission was denied.");
+    });
+}
+
+function renderAdminSandboxChallenges() {
+    const list = document.getElementById('admin-sandbox-challenges-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Sort challenges by level then by name
+    const sorted = [...(sandboxChallengesData || [])].sort((a, b) => {
+        if (a.level !== b.level) return String(a.level).localeCompare(String(b.level));
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    if (sorted.length === 0) {
+        list.innerHTML = '<p style="color:#666; padding:10px;">No custom challenges found.</p>';
+        return;
+    }
+
+    sorted.forEach(c => {
+        list.innerHTML += `<div class="req-item" style="border-left: 3px solid var(--color-catalog);">
+            <div style="flex:1;">
+                <div style="color:white; font-weight:bold;">${escapeHtml(c.name)}</div>
+                <div style="color:#aaa; font-size:0.8rem;">Level ${escapeHtml(c.level)} | ${escapeHtml(c.difficulty)} | 🪙 ${c.points} pts</div>
+                <div style="color:#888; font-size:0.75rem; margin-top:2px; max-width:80%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(c.objective || c.desc || 'No description')}
+                </div>
+            </div>
+            <div class="req-actions">
+                <button onclick="openSandboxChallengeModal('${escapeJsString(c.id)}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i> Edit</button>
+                <button onclick="deleteSandboxChallenge('${escapeJsString(c.id)}')" class="btn-mini" style="background:#e74c3c; color:white;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>`;
+    });
+}
+
+function openSandboxChallengeModal(id = null) {
+    editingChallengeId = id;
+    if (id) {
+        // Edit existing
+        const c = sandboxChallengesData.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('sc-modal-title').innerText = 'Edit Sandbox Challenge';
+        document.getElementById('sc-level').value = c.level;
+        document.getElementById('sc-points').value = c.points;
+        document.getElementById('sc-name').value = c.name;
+        document.getElementById('sc-difficulty').value = c.difficulty || '';
+        document.getElementById('sc-desc').value = c.objective || c.desc || '';
+        document.getElementById('sc-theme').value = c.theme || '';
+        document.getElementById('sc-time').value = c.time || '';
+    } else {
+        // Create new
+        document.getElementById('sc-modal-title').innerText = 'New Sandbox Challenge';
+        document.getElementById('sc-level').value = '1';
+        document.getElementById('sc-points').value = '25';
+        document.getElementById('sc-name').value = '';
+        document.getElementById('sc-difficulty').value = '⭐';
+        document.getElementById('sc-desc').value = '';
+        document.getElementById('sc-theme').value = '';
+        document.getElementById('sc-time').value = '';
+    }
+    document.getElementById('sandbox-challenge-admin-modal').style.display = 'flex';
+}
+
+function saveSandboxChallenge() {
+    const level = document.getElementById('sc-level').value;
+    const points = parseInt(document.getElementById('sc-points').value) || 0;
+    const name = document.getElementById('sc-name').value.trim();
+    const difficulty = document.getElementById('sc-difficulty').value.trim();
+    const desc = document.getElementById('sc-desc').value.trim();
+    const theme = document.getElementById('sc-theme').value.trim();
+    const time = document.getElementById('sc-time').value.trim();
+
+    if (!name || !desc) {
+        showAlert('Missing Info', 'A name and description are required.');
+        return;
+    }
+
+    const data = {
+        level,
+        points,
+        name,
+        difficulty,
+        objective: desc,
+        desc: desc,
+        theme,
+        time
+    };
+
+    if (editingChallengeId) {
+        DB.sandboxChallenges.update(editingChallengeId, data);
+        showAlert('Saved', 'Challenge updated.');
+    } else {
+        data.number = sandboxChallengesData.filter(x => x.level === level).length + 1;
+        DB.sandboxChallenges.add(data);
+        showAlert('Saved', 'New challenge added.');
+    }
+
+    sandboxChallengesData = DB.sandboxChallenges.getAll();
+    if (typeof renderSandbox === 'function') renderSandbox(); // Update ninja UI if active
+    renderAdminSandboxChallenges();
+    document.getElementById('sandbox-challenge-admin-modal').style.display = 'none';
+}
+
+function deleteSandboxChallenge(id) {
+    showConfirm('Delete this sandbox challenge permanently?', () => {
+        DB.sandboxChallenges.delete(id);
+        sandboxChallengesData = DB.sandboxChallenges.getAll();
+        if (typeof renderSandbox === 'function') renderSandbox(); // Update ninja UI if active
+        renderAdminSandboxChallenges();
+        showAlert('Deleted', 'Challenge has been removed.');
+    });
 }

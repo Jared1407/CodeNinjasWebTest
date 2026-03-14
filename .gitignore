@@ -1,7 +1,42 @@
-.vscode
-node_modules
-dist
-*.bat
-*.zip
+# Dependencies
+node_modules/
+
+# Environment variables
 .env
-.vercel
+.env.local
+.env.*.local
+
+# Vercel
+.vercel/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build output
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Temp helper scripts
+*.py
+
+# Data files (use sandboxData.js instead)
+*.csv
+
+# Archives
+*.zip
+*.bat

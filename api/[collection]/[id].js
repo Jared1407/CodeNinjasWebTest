@@ -1,6 +1,8 @@
-// api/[collection]/[id].js - Single item CRUD operations (get, update, delete)
+// api/[collection]/[id].js - Single item CRUD operations
+// GET is public, mutations require authentication
 import connectDB from '../../lib/mongodb.js';
 import { getCollectionModel } from '../../lib/models/Collection.js';
+import { verifyToken, extractToken } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
     const { collection, id } = req.query;
@@ -8,7 +10,7 @@ export default async function handler(req, res) {
     // Validate collection name
     const validCollections = [
         'news', 'rules', 'coins', 'catalog', 'requests', 'queue',
-        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'settings'
+        'leaderboard', 'jams', 'jamSubmissions', 'games', 'challenges', 'sandboxSubmissions', 'sandboxChallenges', 'settings'
     ];
 
     if (!validCollections.includes(collection)) {
@@ -19,13 +21,30 @@ export default async function handler(req, res) {
         await connectDB();
         const Model = getCollectionModel(collection);
 
-        // GET - Get single item
+        // GET - Get single item (PUBLIC - no auth required)
         if (req.method === 'GET') {
-            const item = await Model.findOne({ id: id });
+            const item = await Model.findOne({ id: id }).lean();
             if (item) {
-                return res.json(item.toObject());
+                return res.json(item);
             } else {
                 return res.status(404).json({ error: 'Item not found' });
+            }
+        }
+
+        // For mutations (PUT, DELETE), require authentication
+        // Exception: leaderboard PUT is allowed without auth for ninja point deductions
+        // TODO: Move point deductions server-side to close this properly (see BUG-1 in audit)
+        const isPublicPut = req.method === 'PUT' && collection === 'leaderboard';
+
+        let user = null;
+        if (req.method !== 'GET' && !isPublicPut) {
+            const token = extractToken(req.headers.authorization);
+            if (!token) {
+                return res.status(401).json({ error: `Authentication required for ${req.method} on ${collection}` });
+            }
+            user = await verifyToken(token);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
             }
         }
 
