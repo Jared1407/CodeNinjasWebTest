@@ -85,7 +85,7 @@
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/codeninja-dashboard.git
+git clone https://github.com/Jared1407/codeninja-dashboard.git
 cd codeninja-dashboard
 
 # 2. Install dependencies
