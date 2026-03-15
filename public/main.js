@@ -525,9 +525,9 @@ function submitRequest() {
                 return;
             }
             const newPoints = (ninja.points || 0) - cost;
-            DB.leaderboard.update(ninja.id, { points: newPoints });
-            leaderboardData = DB.leaderboard.getAll();
-            console.log(`Deducted ${cost} points from ${ninja.name}. New balance: ${newPoints}`);
+            ninja.points = newPoints;
+            updateNinjaPointsDisplay();
+            console.log(`Optimistically deducted ${cost} points from ${ninja.name}. New balance: ${newPoints}. Server will verify.`);
         }
     }
 

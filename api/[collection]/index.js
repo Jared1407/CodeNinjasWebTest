@@ -51,6 +51,27 @@ export default async function handler(req, res) {
             if (bodySize > 50000) {
                 return res.status(413).json({ error: 'Request body too large' });
             }
+
+            // --- Server-side Point Deduction Logic ---
+            if (collection === 'requests' && req.body.cost) {
+                const cost = parseInt(req.body.cost) || 0;
+                if (cost > 0 && req.body.ninjaId) {
+                    const LeaderboardModel = getCollectionModel('leaderboard');
+                    // We must deduct the points before continuing
+                    const ninja = await LeaderboardModel.findOne({ id: req.body.ninjaId }).lean();
+                    
+                    if (!ninja || (ninja.points || 0) < cost) {
+                        return res.status(400).json({ error: 'Insufficient points or ninja not found.' });
+                    }
+                    
+                    await LeaderboardModel.findOneAndUpdate(
+                        { id: req.body.ninjaId },
+                        { $inc: { points: -cost } }
+                    );
+                }
+            }
+            // -----------------------------------------
+
             const id = `${collection}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const newItem = await Model.create({
                 id: id,

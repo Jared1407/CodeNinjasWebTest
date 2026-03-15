@@ -32,12 +32,11 @@ export default async function handler(req, res) {
         }
 
         // For mutations (PUT, DELETE), require authentication
-        // Exception: leaderboard PUT is allowed without auth for ninja point deductions
-        // TODO: Move point deductions server-side to close this properly (see BUG-1 in audit)
-        const isPublicPut = req.method === 'PUT' && collection === 'leaderboard';
+        // Exception: catalog PUT is allowed without auth to increment interest
+        const isPublicInterestUpdate = req.method === 'PUT' && collection === 'catalog' && Object.keys(req.body).length === 1 && req.body.interest !== undefined;
 
         let user = null;
-        if (req.method !== 'GET' && !isPublicPut) {
+        if (req.method !== 'GET' && !isPublicInterestUpdate) {
             const token = extractToken(req.headers.authorization);
             if (!token) {
                 return res.status(401).json({ error: `Authentication required for ${req.method} on ${collection}` });
